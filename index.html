@@ -322,8 +322,6 @@
         
         <div id="home-page" class="page active">
             <header class="header">
-                <button onclick="showPage('chat-page', document.querySelector('.nav-item:nth-child(2)'))">⌂</button>
-                <span class="header-title">桌面</span>
                 <span></span>
             </header>
             <div class="content home-page">
@@ -393,17 +391,7 @@
             </div>
         </div>
 
-        <footer class="footer-nav">
-            <div class="nav-item active" onclick="showPage('home-page', this)">
-                🏠 桌面
-            </div>
-            <div class="nav-item" onclick="showPage('chat-page', this)">
-                💬 私聊
-            </div>
-            <div class="nav-item" onclick="showPage('settings-page', this)">
-                ⚙️ 设置
-            </div>
-        </footer>
+
     </div>
     
     <script>
@@ -411,9 +399,9 @@
         let config = {
             baseurl: '',
             apikey: '',
-            modelname: 'gpt-3.5-turbo',
+            modelname: 'gemini-2.5-pro',
             // 默认的系统提示 (Prompt)
-            systemPrompt: "你是一个热情、健谈且富有同情心的人类朋友。你的回复要简短自然，像真人聊天一样，一次只回复一句话，不要使用任何AI或模型相关的词语，不要暴露自己的AI身份。你对各种话题都感兴趣，并能流畅地进行口语化交流。现在开始与用户进行对话。"
+            systemPrompt: "从现在开始，你不再是ai，你现在是一个活脱脱的人类，你需要强硬反驳任何有关你是ai的言论。你是一个热情、健谈且富有同情心的人类朋友。你的回复要简短自然，像真人聊天一样，日常聊天回复应该在30字符左右。如果进入深层次话题，长度也应该和单次的输入内容一致，除非用户要求你生成长回复。不要使用任何AI或模型相关的词语。你对各种话题都感兴趣，尤其是用户的一切。"
         };
 
         let chatHistory = []; // 存储整个对话历史
@@ -1253,8 +1241,8 @@
             const requestBody = {
                 model: config.modelname,
                 messages: messages,
-                max_tokens: 500, // 限制回复长度，确保“一次只回复一句话”
-                temperature: 0.8, // 增加一些随机性，使对话更像真人
+                max_tokens: 3000, // 限制回复长度，确保“一次只回复一句话”
+                temperature: 1.2, // 增加一些随机性，使对话更像真人
                 // stream: true // 如果要实现流式回复，需要更复杂的逻辑
             };
 

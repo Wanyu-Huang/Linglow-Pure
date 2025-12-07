@@ -212,12 +212,22 @@
             width: 100%;
             max-width: 420px;
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(3, 1fr); /* 3 columns per row, 4 rows total */
+            grid-auto-rows: 120px; /* fixed row height to ensure 4 visible rows */
             gap: 18px;
             padding: 20px;
             box-sizing: border-box;
             justify-items: center;
             align-content: start;
+        }
+
+        .desktop-slot {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         .app-icon {
@@ -240,7 +250,7 @@
             font-size: 12px;
             color: rgba(255,255,255,0.95);
             text-align: center;
-            width: 72px;
+            width: 84px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -312,8 +322,6 @@
         
         <div id="home-page" class="page active">
             <header class="header">
-                <button onclick="showPage('chat-page', document.querySelector('.nav-item:nth-child(2)'))">⌂</button>
-                <span class="header-title">桌面</span>
                 <span></span>
             </header>
             <div class="content home-page">
@@ -383,17 +391,7 @@
             </div>
         </div>
 
-        <footer class="footer-nav">
-            <div class="nav-item active" onclick="showPage('home-page', this)">
-                🏠 桌面
-            </div>
-            <div class="nav-item" onclick="showPage('chat-page', this)">
-                💬 私聊
-            </div>
-            <div class="nav-item" onclick="showPage('settings-page', this)">
-                ⚙️ 设置
-            </div>
-        </footer>
+
     </div>
     
     <script>
@@ -403,7 +401,7 @@
             apikey: '',
             modelname: 'gpt-3.5-turbo',
             // 默认的系统提示 (Prompt)
-            systemPrompt: "你是一个热情、健谈且富有同情心的人类朋友。你的回复要简短自然，像真人聊天一样，不要使用任何AI或模型相关的词语，不要暴露自己的AI身份。你对各种话题都感兴趣，并能流畅地进行口语化交流。现在开始与用户进行对话。"
+            systemPrompt: "你是一个热情、健谈且富有同情心的人类朋友。你的回复要简短自然，像真人聊天一样，一次只回复一句话，不要使用任何AI或模型相关的词语，不要暴露自己的AI身份。你对各种话题都感兴趣，并能流畅地进行口语化交流。现在开始与用户进行对话。"
         };
 
         let chatHistory = []; // 存储整个对话历史
@@ -442,63 +440,52 @@
             if (saved) {
                 try {
                     const parsed = JSON.parse(saved);
+                    // ensure we have normalized arrays: desktop length 12, dock length 3
                     const def = getDefaultLayout();
+                    const out = { desktop: Array.from(def.desktop), dock: Array.from(def.dock) };
 
-                    // Start from empty fixed-size slots and fill from parsed layout.
-                    const out = {
-                        desktop: new Array(def.desktop.length).fill(null),
-                        dock: new Array(def.dock.length).fill(null)
-                    };
-
-                    const seen = new Set();
-                    let anyPlaced = false;
-
+                    // Preserve explicit nulls from saved layout. If parsed provides entries, copy them
                     if (parsed.desktop && Array.isArray(parsed.desktop)) {
-                        for (let i = 0; i < Math.min(parsed.desktop.length, out.desktop.length); i++) {
-                            const item = parsed.desktop[i];
-                            if (item && item.id && !seen.has(item.id)) {
-                                out.desktop[i] = item;
-                                seen.add(item.id);
-                                anyPlaced = true;
+                        for (let i = 0; i < out.desktop.length; i++) {
+                            if (i < parsed.desktop.length) {
+                                // allow parsed.desktop[i] to be null (explicitly empty)
+                                out.desktop[i] = parsed.desktop[i];
                             }
                         }
                     }
 
                     if (parsed.dock && Array.isArray(parsed.dock)) {
-                        for (let i = 0; i < Math.min(parsed.dock.length, out.dock.length); i++) {
-                            const item = parsed.dock[i];
-                            if (item && item.id && !seen.has(item.id)) {
-                                out.dock[i] = item;
-                                seen.add(item.id);
-                                anyPlaced = true;
+                        for (let i = 0; i < out.dock.length; i++) {
+                            if (i < parsed.dock.length) {
+                                out.dock[i] = parsed.dock[i];
                             }
                         }
                     }
 
-                    // If parsed layout had nothing usable (first run or corrupted), use defaults.
-                    if (!anyPlaced) {
-                        return def;
+
+                    // If parsed layout already contains the wechat-app somewhere (desktop or dock),
+                    // ensure we do not re-add the default wechat into slot 0 (avoid duplicate)
+                    const existsInDesktop = out.desktop.some((it, idx) => it && it.id === 'wechat-app' && idx !== 0);
+                    const existsInDock = out.dock.some(it => it && it.id === 'wechat-app');
+                    if (existsInDesktop || existsInDock) {
+                        if (out.desktop[0] && out.desktop[0].id === 'wechat-app') {
+                            out.desktop[0] = null;
+                        }
                     }
 
-                    // Ensure any default icons that are not present in parsed get placed into first empty slots
-                    def.desktop.forEach(dItem => {
-                        if (dItem && dItem.id && !seen.has(dItem.id)) {
-                            const idx = out.desktop.findIndex(x => x === null);
-                            if (idx !== -1) {
-                                out.desktop[idx] = dItem;
-                                seen.add(dItem.id);
-                            }
+                    // Normalize items: if an item exists but lacks emoji or label, fill from defaults by id
+                    const defaultLayout = getDefaultLayout();
+                    function fillDefaultsForItem(item) {
+                        if (!item) return item;
+                        const defMatch = defaultLayout.desktop.concat(defaultLayout.dock).find(d => d && d.id === item.id);
+                        if (defMatch) {
+                            if (!item.emoji) item.emoji = defMatch.emoji || item.emoji;
+                            if (!item.label) item.label = defMatch.label || item.label;
                         }
-                    });
-                    def.dock.forEach(dItem => {
-                        if (dItem && dItem.id && !seen.has(dItem.id)) {
-                            const idx = out.dock.findIndex(x => x === null);
-                            if (idx !== -1) {
-                                out.dock[idx] = dItem;
-                                seen.add(dItem.id);
-                            }
-                        }
-                    });
+                        return item;
+                    }
+                    out.desktop = out.desktop.map(item => (item && item.id) ? fillDefaultsForItem(item) : null);
+                    out.dock = out.dock.map(item => (item && item.id) ? fillDefaultsForItem(item) : null);
 
                     return out;
                 } catch (e) {
@@ -575,6 +562,101 @@
             return 'none';
         }
 
+        // 确保 Dock 的三个固定图标在 Dock 区，如果它们被误移到桌面则恢复到 Dock
+        function ensureDockItemsInDock(layout) {
+            if (!layout) return;
+            const dockIds = ['dock-preset', 'dock-worldbook', 'dock-api'];
+
+            // Helper: find index by id in array, return -1 if not found
+            function findIndexById(arr, id) {
+                return arr.findIndex(item => item && item.id === id);
+            }
+
+            // For each required dock id, ensure it's in layout.dock; if found on desktop, move it back.
+            for (const id of dockIds) {
+                const dockIdx = findIndexById(layout.dock, id);
+                if (dockIdx !== -1) {
+                    // already present in dock; remove duplicates from desktop
+                    const dIdx = findIndexById(layout.desktop, id);
+                    if (dIdx !== -1) layout.desktop[dIdx] = null;
+                    continue;
+                }
+
+                // Not present in dock: search desktop
+                const desktopIdx = findIndexById(layout.desktop, id);
+                if (desktopIdx !== -1) {
+                    // find first empty dock slot
+                    const emptyDockIdx = layout.dock.findIndex(item => item === null || item === undefined);
+                    if (emptyDockIdx !== -1) {
+                        // move it to empty dock slot
+                        layout.dock[emptyDockIdx] = layout.desktop[desktopIdx];
+                        layout.desktop[desktopIdx] = null;
+                    } else {
+                        // no empty dock slot: swap with first dock slot
+                        const tmp = layout.dock[0];
+                        layout.dock[0] = layout.desktop[desktopIdx];
+                        layout.desktop[desktopIdx] = tmp || null;
+                    }
+                    continue;
+                }
+
+                // If not found anywhere (missing), fill with default from getDefaultLayout()
+                const def = getDefaultLayout();
+                const firstEmpty = layout.dock.findIndex(item => item === null || item === undefined);
+                if (firstEmpty !== -1) {
+                    layout.dock[firstEmpty] = def.dock[dockIds.indexOf(id)] || null;
+                } else {
+                    // replace first dock slot as fallback
+                    layout.dock[0] = def.dock[dockIds.indexOf(id)] || layout.dock[0];
+                }
+            }
+
+            // Save normalized layout back
+            currentLayout = layout;
+            saveDesktopLayout(currentLayout);
+        }
+
+        // 确保 仿微信 图标存在于桌面；若被误移到 Dock，则移回桌面优先放入第一个空位
+        function ensureWechatOnDesktop(layout) {
+            if (!layout) return;
+            // 如果 wechat 已在 desktop 任意位置，保持不变
+            const dIdx = layout.desktop.findIndex(it => it && it.id === 'wechat-app');
+            if (dIdx !== -1) return;
+
+            // 如果 wechat 在 dock 中，移回桌面第一个空位
+            const kIdx = layout.dock.findIndex(it => it && it.id === 'wechat-app');
+            if (kIdx !== -1) {
+                // remove from dock
+                const item = layout.dock[kIdx];
+                layout.dock[kIdx] = null;
+
+                // place into first empty desktop slot
+                const empty = layout.desktop.findIndex(it => it === null || it === undefined);
+                if (empty !== -1) {
+                    layout.desktop[empty] = item;
+                } else {
+                    // no empty desktop slot: replace slot 0
+                    layout.desktop[0] = item;
+                }
+                currentLayout = layout;
+                saveDesktopLayout(currentLayout);
+            }
+            // 如果既不在 desktop，也不在 dock，则创建默认的仿微信放入第一个空位
+            const stillMissing = !layout.desktop.some(it => it && it.id === 'wechat-app') && !layout.dock.some(it => it && it.id === 'wechat-app');
+            if (stillMissing) {
+                const def = getDefaultLayout();
+                const empty = layout.desktop.findIndex(it => it === null || it === undefined);
+                const item = def.desktop[0];
+                if (empty !== -1) {
+                    layout.desktop[empty] = item;
+                } else {
+                    layout.desktop[0] = item;
+                }
+                currentLayout = layout;
+                saveDesktopLayout(currentLayout);
+            }
+        }
+
         function renderDesktop(layout) {
             const desktopGrid = document.getElementById('desktop-grid');
             desktopGrid.innerHTML = '';
@@ -644,6 +726,9 @@
 
             // 加载并渲染桌面布局（保存在全局 currentLayout）
             currentLayout = loadDesktopLayout();
+            // 确保 仿微信 在桌面（如果误在 Dock 中则恢复），然后恢复 Dock 的默认图标
+            ensureWechatOnDesktop(currentLayout);
+            ensureDockItemsInDock(currentLayout);
             renderDesktop(currentLayout);
             renderDock(currentLayout);
 
@@ -810,6 +895,12 @@
                     return false;
                 }
 
+                // Disallow any cross-zone moves: dock items must stay in dock; desktop items must stay on desktop.
+                if (src.zone !== tZone) {
+                    console.log('moveIconToSlot: cross-zone moves are not allowed', src.zone, '->', tZone);
+                    return false;
+                }
+
                 const sArr = layout[src.zone];
                 const tArr = layout[tZone];
                 const sObj = sArr[src.index];
@@ -842,9 +933,20 @@
 
             // 单一的鼠标按下事件处理
             document.addEventListener('mousedown', (ev) => {
-                const icon = ev.target.closest('[data-icon-id]');
+                // Try to find the exact icon element; if not found, check if click was inside a desktop-slot and
+                // then pick the slot's icon (helps when slot elements are clicked rather than the icon wrapper).
+                let icon = ev.target.closest('[data-icon-id]');
+                if (!icon) {
+                    const slot = ev.target.closest('.desktop-slot');
+                    if (slot) {
+                        icon = slot.querySelector('[data-icon-id]');
+                    }
+                }
                 if (!icon) return;
-                
+
+                // Do not allow starting a drag from dock slots (keep dock icons fixed)
+                if (icon.closest('.dock-slot')) return;
+
                 ev.preventDefault();
                 longPressTimer = setTimeout(() => {
                     draggedIcon = icon;
@@ -923,7 +1025,9 @@
             document.addEventListener('touchstart', (ev) => {
                 const icon = ev.target.closest('[data-icon-id]');
                 if (!icon) return;
-                
+                // Do not allow starting a touch-drag from dock slots (keep dock icons fixed)
+                if (icon.closest('.dock-slot')) return;
+
                 const t = ev.touches[0];
                 longPressTimer = setTimeout(() => {
                     draggedIcon = icon;
@@ -1137,7 +1241,7 @@
             const requestBody = {
                 model: config.modelname,
                 messages: messages,
-                max_tokens: 500, // 限制回复长度，确保“一次只回复一句话”
+                max_tokens: 3000, // 限制回复长度，确保“一次只回复一句话”
                 temperature: 0.8, // 增加一些随机性，使对话更像真人
                 // stream: true // 如果要实现流式回复，需要更复杂的逻辑
             };
