@@ -2592,12 +2592,6 @@
                 hasReachedWaitTime = false;
                 hideTypingIndicator();
                 
-                // 移除加载占位符
-                const placeholder = chatContainer.querySelector('.message.ai .bubble');
-                if (placeholder && placeholder.textContent === '...') {
-                    placeholder.parentElement.remove();
-                }
-                
                 // 显示超时消息
                 const errorBubble = document.createElement('div');
                 errorBubble.classList.add('message', 'ai');
@@ -2620,16 +2614,6 @@
                     }
                 }
             }, timeoutSeconds * 1000);
-            
-            // 预留一个位置给 AI 的回复，用于流式响应或加载指示
-            const aiMessagePlaceholder = document.createElement('div');
-            aiMessagePlaceholder.classList.add('message', 'ai');
-            const aiBubble = document.createElement('div');
-            aiBubble.classList.add('bubble');
-            aiBubble.textContent = '...'; // 加载指示
-            aiMessagePlaceholder.appendChild(aiBubble);
-            chatContainer.appendChild(aiMessagePlaceholder);
-            scrollToBottom();
 
             // B. 获取用户设置的上下文窗口大小 (N)
             const contextSizeKey = 'contextWindowSize'; 
@@ -2724,11 +2708,6 @@
                 aiResponseText = cleanApiResponse(aiResponseText);
                 console.log("【API清理后输出】:", encodeURI(aiResponseText).substring(0, 50));
                 
-                // 移除预留的占位符
-                if (chatContainer.contains(aiMessagePlaceholder)) {
-                    chatContainer.removeChild(aiMessagePlaceholder);
-                }
-                
                 // 隐藏"对方正在输入中..."
                 hideTypingIndicator();
                 
@@ -2745,7 +2724,16 @@
                     console.log('❌ API调用出错，已清除超时计时器');
                 }
                 
-                aiBubble.textContent = `[错误] 无法获取回复。请检查您的设置和网络连接。详细错误：${error.message}`;
+                // 显示错误消息
+                const errorMessage = document.createElement('div');
+                errorMessage.classList.add('message', 'assistant');
+                const errorBubble = document.createElement('div');
+                errorBubble.classList.add('bubble');
+                errorBubble.textContent = `[错误] 无法获取回复。请检查您的设置和网络连接。详细错误：${error.message}`;
+                errorMessage.appendChild(errorBubble);
+                chatContainer.appendChild(errorMessage);
+                scrollToBottom();
+                
                 hideTypingIndicator();
                 isWaitingForAI = false;
                 
