@@ -66,10 +66,12 @@
             background: none;
             border: none;
             color: #333;
-            font-size: 24px;
+            font-size: 22px; /* 统一字体大小 */
             cursor: pointer;
             padding: 0;
             line-height: 1;
+            min-width: 32px; /* 确保有足够点击区域 */
+            text-align: center;
         }
 
         /* 底部导航栏 (Footer for tab switching)
@@ -220,15 +222,15 @@
         /* 聊天输入区 */
         .chat-input-area {
             position: fixed;
-            bottom: 0; /* 位于底部导航栏之上 */
+            bottom: 0;
             left: 0;
             right: 0;
             background-color: #f7f7f7;
-            padding: 8px 10px;
+            padding: 6px 8px; /* 减小padding */
             display: flex;
-            flex-wrap: wrap; /* 允许换行 */
+            flex-wrap: wrap;
             align-items: center;
-            gap: 8px;
+            gap: 4px; /* 进一步减小间距 */
             border-top: 1px solid #dcdcdc;
             box-shadow: 0 -1px 3px rgba(0,0,0,0.05);
             flex-shrink: 0;
@@ -244,7 +246,7 @@
         .input-tool-btn {
             background: none;
             border: none;
-            padding: 8px;
+            padding: 6px; /* 减小padding */
             cursor: pointer;
             color: #666;
             display: flex;
@@ -253,6 +255,13 @@
             border-radius: 4px;
             transition: background-color 0.2s;
             flex-shrink: 0;
+            width: 32px; /* 固定宽度 */
+            height: 32px; /* 固定高度 */
+        }
+        
+        .input-tool-btn svg {
+            width: 20px; /* 缩小图标 */
+            height: 20px;
         }
         
         .input-tool-btn:hover {
@@ -264,12 +273,13 @@
         }
 
         #user-input {
-            flex-grow: 1;
-            padding: 8px 12px;
+            flex: 1 1 auto;
+            min-width: 100px; /* 减小最小宽度 */
+            padding: 7px 10px; /* 稍微减小padding */
             border: 1px solid #ccc;
             border-radius: 5px;
-            font-size: 16px;
-            resize: none; /* 禁止用户调整大小 */
+            font-size: 15px; /* 稍微减小字体 */
+            resize: none;
             max-height: 80px;
             overflow-y: auto;
             background-color: white;
@@ -279,12 +289,13 @@
             background-color: #1AAD19;
             color: white;
             border: none;
-            padding: 8px 16px;
+            padding: 7px 10px; /* 减小padding */
             border-radius: 5px;
             cursor: pointer;
-            font-size: 15px;
+            font-size: 14px;
             white-space: nowrap;
             flex-shrink: 0;
+            min-width: 48px; /* 减小最小宽度 */
         }
 
         #generate-btn:disabled {
@@ -1363,7 +1374,7 @@
             <header class="header">
                 <button onclick="showPage('home-page')">‹</button>
                 <span class="header-title">微信</span>
-                <button id="add-character-menu-btn">+</button>
+                <button id="add-character-menu-btn" style="font-size: 26px;">+</button>
             </header>
             
             <div class="content" style="background-color: #fff;">
@@ -1381,9 +1392,8 @@
         <div id="chat-page" class="page">
             <header class="header">
                 <button id="back-to-chat-list-btn">‹</button>
-                <button onclick="clearChat()">🗑️</button>
                 <span class="header-title" id="chat-name">AI 聊天对象</span>
-                <button onclick="openSettings()">⚙️</button>
+                <button onclick="openSettings()" style="letter-spacing: 2px;">⋯</button>
             </header>
             
             <div class="content">
@@ -1396,7 +1406,7 @@
 
             <div class="chat-input-area" id="chat-input-area">
                 <button class="input-tool-btn" id="voice-btn" title="语音输入（开发中）">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
                         <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
                         <line x1="12" y1="19" x2="12" y2="23"></line>
@@ -1405,7 +1415,7 @@
                 </button>
                 <textarea id="user-input" placeholder="输入消息..." rows="1"></textarea>
                 <button class="input-tool-btn" id="emoji-btn" title="表情包（开发中）">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"></circle>
                         <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
                         <line x1="9" y1="9" x2="9.01" y2="9"></line>
@@ -1413,7 +1423,7 @@
                     </svg>
                 </button>
                 <button class="input-tool-btn" id="plus-btn" title="更多功能（开发中）">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"></circle>
                         <line x1="12" y1="8" x2="12" y2="16"></line>
                         <line x1="8" y1="12" x2="16" y2="12"></line>
@@ -1425,7 +1435,7 @@
 
         <div id="settings-page" class="page">
             <header class="header">
-                <button onclick="closeSettings()">←</button>
+                <button onclick="closeSettings()">‹</button>
                 <span class="header-title">设置</span>
                 <span></span> </header>
             <div class="content" style="padding: 20px; overflow-y: auto; flex-grow: 1;">
@@ -1734,6 +1744,9 @@
                         以下操作不可恢复,请谨慎操作
                     </div>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button onclick="clearChat()" style="padding: 8px 16px; background-color: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            🗑️ 清空聊天记录
+                        </button>
                         <button onclick="blockCharacter()" style="padding: 8px 16px; background-color: #757575; color: white; border: none; border-radius: 4px; cursor: pointer; opacity: 0.5;">
                             🚫 拉黑好友
                         </button>
