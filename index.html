@@ -1421,31 +1421,24 @@
         }
         
         /* ========== 引用样式 ========== */
-        /* 输入框上方的引用预览 */
+        /* 输入框下方的引用预览 (微信风格) */
         .quote-reference {
-            background: #f0f0f0;
-            border-left: 3px solid #007AFF;
+            background: #f5f5f5; /* 略深的灰色背景 */
             padding: 8px 12px;
             border-radius: 4px;
-            font-size: 13px;
-            color: #666;
+            font-size: 12px; /* 小字 */
+            color: #999; /* 灰色文字 */
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             gap: 8px;
-        }
-        
-        .quote-reference .quote-icon {
-            font-size: 16px;
-            flex-shrink: 0;
+            margin-top: 8px; /* 在输入框下方留间距 */
         }
         
         .quote-reference .quote-content {
             flex-grow: 1;
             overflow: hidden;
             text-overflow: ellipsis;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
+            white-space: nowrap; /* 单行显示 */
             line-height: 1.4;
         }
         
@@ -1464,36 +1457,32 @@
         
         /* 消息气泡内的引用样式 (微信风格) */
         .quoted-message {
-            background: transparent; /* 无背景 */
-            border: none; /* 无边框 */
-            padding: 4px 0 0 0; /* 只在上方留一点间距 */
-            margin-top: 5px; /* 在气泡下方 */
+            background: rgba(0, 0, 0, 0.05); /* 略深的半透明背景 */
+            padding: 6px 8px;
+            margin-top: 8px; /* 在正文下方留间距 */
             margin-bottom: 0;
+            border-radius: 4px;
             font-size: 11px;
-            color: #999; /* 全灰色 */
+            color: #999; /* 灰色 */
             line-height: 1.3;
             width: fit-content;
             max-width: 100%;
             box-sizing: border-box;
             overflow: hidden;
             text-overflow: ellipsis;
-            display: -webkit-box;
-            -webkit-line-clamp: 1; /* 只显示1行 */
-            -webkit-box-orient: vertical;
+            white-space: nowrap; /* 单行显示 */
         }
         
         .quoted-message .quote-sender {
-            font-weight: normal; /* 不加粗 */
-            color: #999; /* 全灰色，不用蓝色 */
+            font-weight: normal;
+            color: #999;
             margin-right: 0;
         }
         
         /* 用户和AI的引用样式统一 */
         .message.user .quoted-message,
         .message.assistant .quoted-message {
-            background: transparent;
-            border: none;
-            color: #999;
+            background: rgba(0, 0, 0, 0.05);
         }
     </style>
 </head>
@@ -3742,19 +3731,24 @@
             document.getElementById('ai-avatar-remove-btn-settings').style.display = config.aiAvatar ? 'inline-block' : 'none';
             document.getElementById('user-avatar-remove-btn-settings').style.display = config.userAvatar ? 'inline-block' : 'none';
             
-            // 加载上下文窗口大小
-            document.getElementById('context-window-size').value = config.maxContextMessages || 50;
+            // 【修复】从localStorage加载上下文窗口大小
+            const contextWindowSize = localStorage.getItem('contextWindowSize') || '50';
+            document.getElementById('context-window-size').value = contextWindowSize;
             
-            // 加载批量发送等待时间
-            document.getElementById('batch-wait-time').value = config.batchWaitTime || 7;
+            // 【修复】从localStorage加载批量发送等待时间
+            const batchWaitTime = localStorage.getItem('batchWaitTime') || '7';
+            document.getElementById('batch-wait-time').value = batchWaitTime;
             
             // 加载API超时时间(全局)
             const apiTimeout = localStorage.getItem('apiTimeout') || '60';
             document.getElementById('api-timeout').value = apiTimeout;
             
-            // 加载长期记忆设置
-            document.getElementById('auto-summary-interval').value = config.autoSummaryInterval || 50;
-            document.getElementById('max-important-events').value = config.maxImportantEvents || 10;
+            // 【修复】从localStorage加载长期记忆设置
+            const autoSummaryInterval = localStorage.getItem('autoSummaryInterval') || '50';
+            document.getElementById('auto-summary-interval').value = autoSummaryInterval;
+            
+            const maxImportantEvents = localStorage.getItem('maxImportantEvents') || '10';
+            document.getElementById('max-important-events').value = maxImportantEvents;
             
             // 更新记忆状态显示
             updateMemoryStatus();
@@ -4610,18 +4604,17 @@
             // 获取发送者昵称
             const senderName = bubble.role === 'user' ? config.userNickname : config.aiNickname;
             
-            // 创建引用预览元素
+            // 创建引用预览元素 (微信风格：昵称：内容)
             const quoteDiv = document.createElement('div');
             quoteDiv.classList.add('quote-reference');
             quoteDiv.innerHTML = `
-                <span class="quote-icon">💬</span>
-                <div class="quote-content"><strong>${escapeHtml(senderName)}:</strong> ${escapeHtml(bubble.content)}</div>
+                <div class="quote-content">${escapeHtml(senderName)}：${escapeHtml(bubble.content)}</div>
                 <span class="quote-close" onclick="clearQuote()">×</span>
             `;
             
-            // 添加到输入区域顶部 (textarea之前)
+            // 添加到输入区域底部 (textarea之后)
             const textarea = inputArea.querySelector('#user-input');
-            inputArea.insertBefore(quoteDiv, textarea);
+            inputArea.insertBefore(quoteDiv, textarea.nextSibling);
         }
         
         /**
@@ -4825,24 +4818,24 @@
             // 清空并重建内容
             bubbleDiv.innerHTML = '';
             
-            // 如果有引用，先添加引用部分
+            // 先添加主要文本
+            const mainTextNode = document.createTextNode(mainText);
+            bubbleDiv.appendChild(mainTextNode);
+            
+            // 如果有引用，添加到下方
             if (quotedText && quotedSender) {
                 const quotedDiv = document.createElement('div');
                 quotedDiv.classList.add('quoted-message');
                 
                 const senderSpan = document.createElement('span');
                 senderSpan.classList.add('quote-sender');
-                senderSpan.textContent = quotedSender + ':';
+                senderSpan.textContent = quotedSender + '：'; // 使用中文冒号
                 
                 quotedDiv.appendChild(senderSpan);
-                quotedDiv.appendChild(document.createTextNode(' ' + quotedText));
+                quotedDiv.appendChild(document.createTextNode(quotedText));
                 
                 bubbleDiv.appendChild(quotedDiv);
             }
-            
-            // 添加主要文本
-            const mainTextNode = document.createTextNode(mainText);
-            bubbleDiv.appendChild(mainTextNode);
             
             // 恢复meta信息
             if (metaHtml) {
@@ -4888,24 +4881,24 @@
                 // 清空并重建内容
                 bubbleDiv.innerHTML = '';
                 
-                // 如果有引用，先添加引用部分
+                // 先添加主要文本
+                const mainTextNode = document.createTextNode(mainText);
+                bubbleDiv.appendChild(mainTextNode);
+                
+                // 如果有引用，添加到下方
                 if (quotedText && quotedSender) {
                     const quotedDiv = document.createElement('div');
                     quotedDiv.classList.add('quoted-message');
                     
                     const senderSpan = document.createElement('span');
                     senderSpan.classList.add('quote-sender');
-                    senderSpan.textContent = quotedSender + ':';
+                    senderSpan.textContent = quotedSender + '：'; // 使用中文冒号
                     
                     quotedDiv.appendChild(senderSpan);
-                    quotedDiv.appendChild(document.createTextNode(' ' + quotedText));
+                    quotedDiv.appendChild(document.createTextNode(quotedText));
                     
                     bubbleDiv.appendChild(quotedDiv);
                 }
-                
-                // 添加主要文本
-                const mainTextNode = document.createTextNode(mainText);
-                bubbleDiv.appendChild(mainTextNode);
                 
                 // 恢复meta信息
                 if (metaHtml) {
@@ -6223,6 +6216,21 @@ ${JSON.stringify(importedMemoryData, null, 2)}
             const mainTextNode = document.createTextNode(mainText);
             bubbleDiv.appendChild(mainTextNode);
             
+            // 如果有引用，添加到气泡内部下方（微信风格）
+            if (quotedText && quotedSender) {
+                const quotedDiv = document.createElement('div');
+                quotedDiv.classList.add('quoted-message');
+                
+                const senderSpan = document.createElement('span');
+                senderSpan.classList.add('quote-sender');
+                senderSpan.textContent = quotedSender + '：'; // 使用中文冒号
+                
+                quotedDiv.appendChild(senderSpan);
+                quotedDiv.appendChild(document.createTextNode(quotedText));
+                
+                bubbleDiv.appendChild(quotedDiv); // 添加到气泡内部
+            }
+            
             const metaDiv = document.createElement('div');
             metaDiv.classList.add('message-meta');
             
@@ -6251,14 +6259,6 @@ ${JSON.stringify(importedMemoryData, null, 2)}
             
             bubbleDiv.appendChild(metaDiv);
             contentWrapper.appendChild(bubbleDiv);
-            
-            // 如果有引用，添加引用块（在气泡下方）
-            if (quotedText && quotedSender) {
-                const quotedDiv = document.createElement('div');
-                quotedDiv.classList.add('quoted-message');
-                quotedDiv.textContent = quotedSender + ': ' + quotedText;
-                contentWrapper.appendChild(quotedDiv);
-            }
             
             messageDiv.appendChild(avatarDiv);
             messageDiv.appendChild(contentWrapper);
