@@ -1405,6 +1405,18 @@
             background-color: #f1f8f4;
         }
         
+        /* 导入和批量生成模式选择对话框的按钮悬停效果 */
+        #import-mode-dialog button:not(.batch-generate-close):hover,
+        #batch-mode-dialog button:not(.batch-generate-close):hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        #import-mode-dialog button:not(.batch-generate-close):active,
+        #batch-mode-dialog button:not(.batch-generate-close):active {
+            transform: translateY(0);
+        }
+        
         /* 导入记忆对话框 */
         .import-memory-dialog {
             position: fixed;
@@ -2933,6 +2945,87 @@
                     🚀 开始生成
                 </button>
                 <button onclick="closeBatchGenerateDialog()" style="padding: 10px 20px; background-color: #999; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    取消
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 导入模式选择对话框 -->
+    <div class="batch-generate-dialog" id="import-mode-dialog" style="display: none;">
+        <div class="batch-generate-content" style="max-width: 500px;">
+            <div class="batch-generate-header">
+                <h3>选择导入模式</h3>
+                <button class="batch-generate-close" onclick="closeImportModeDialog()">×</button>
+            </div>
+            <div class="batch-generate-body">
+                <div style="margin-bottom: 20px;">
+                    <p style="color: #666; font-size: 14px; line-height: 1.6;">
+                        当前聊天记录：<strong id="import-current-count">0</strong> 条<br>
+                        导入的记录：<strong id="import-new-count">0</strong> 条
+                    </p>
+                </div>
+                
+                <div style="background: #e3f2fd; padding: 12px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #2196F3;">
+                    <p style="margin: 0; font-size: 13px; color: #1565c0;">
+                        💡 <strong>提示：</strong>选择"融入"模式将按时间戳合并新旧记录，保留所有消息。
+                    </p>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <button onclick="executeImport('replace')" style="padding: 15px; background-color: #ff9800; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 15px; text-align: left; transition: all 0.2s;">
+                        <div style="font-weight: 600; margin-bottom: 4px;">🔄 全面覆盖</div>
+                        <div style="font-size: 12px; opacity: 0.9;">清空当前记录，用导入的记录完全替换</div>
+                    </button>
+                    
+                    <button onclick="executeImport('merge')" style="padding: 15px; background-color: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 15px; text-align: left; transition: all 0.2s;">
+                        <div style="font-weight: 600; margin-bottom: 4px;">🔗 融入现有记录</div>
+                        <div style="font-size: 12px; opacity: 0.9;">按时间戳合并，保留所有消息（推荐）</div>
+                    </button>
+                </div>
+            </div>
+            <div class="batch-generate-footer">
+                <button onclick="closeImportModeDialog()" style="padding: 10px 20px; background-color: #999; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    取消
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 批量生成模式选择对话框 -->
+    <div class="batch-generate-dialog" id="batch-mode-dialog" style="display: none;">
+        <div class="batch-generate-content" style="max-width: 500px;">
+            <div class="batch-generate-header">
+                <h3 id="batch-mode-title">选择生成模式</h3>
+                <button class="batch-generate-close" onclick="document.getElementById('batch-mode-dialog').style.display='none'">×</button>
+            </div>
+            <div class="batch-generate-body">
+                <div style="margin-bottom: 20px;">
+                    <p style="color: #666; font-size: 14px; line-height: 1.6;" id="batch-mode-desc">
+                        将处理消息并生成长期记忆
+                    </p>
+                </div>
+                
+                <div style="background: #fff3cd; padding: 12px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #ffc107;">
+                    <p style="margin: 0; font-size: 13px; color: #856404;">
+                        ⚠️ <strong>提示：</strong>"继续生成"模式会在现有记忆基础上追加新的内容，"全部覆盖"会清空现有记忆重新生成。
+                    </p>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <button id="batch-mode-replace-btn" style="padding: 15px; background-color: #ff9800; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 15px; text-align: left; transition: all 0.2s;">
+                        <div style="font-weight: 600; margin-bottom: 4px;">🔄 全部覆盖</div>
+                        <div style="font-size: 12px; opacity: 0.9;">清空现有记忆，从头重新生成</div>
+                    </button>
+                    
+                    <button id="batch-mode-continue-btn" style="padding: 15px; background-color: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 15px; text-align: left; transition: all 0.2s;">
+                        <div style="font-weight: 600; margin-bottom: 4px;">➕ 继续生成</div>
+                        <div style="font-size: 12px; opacity: 0.9;">在现有记忆基础上追加（推荐）</div>
+                    </button>
+                </div>
+            </div>
+            <div class="batch-generate-footer">
+                <button id="batch-mode-cancel-btn" style="padding: 10px 20px; background-color: #999; color: white; border: none; border-radius: 4px; cursor: pointer;">
                     取消
                 </button>
             </div>
@@ -4969,6 +5062,7 @@
 
         /**
          * 导出聊天记录为 JSON 文件
+         * 改进版本：支持小米浏览器等多种浏览器
          */
         document.getElementById('export-btn').addEventListener('click', () => {
             // 导出包含所有必要数据的完整对象
@@ -4981,19 +5075,65 @@
             };
             
             const dataStr = JSON.stringify(exportData, null, 2); // 格式化 JSON
-            const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-
             const exportFileName = 'DazzleLight_Chat_Backup_' + new Date().toISOString().slice(0, 10) + '.json';
 
-            // 创建一个隐藏的下载链接并点击
-            let linkElement = document.createElement('a');
-            linkElement.setAttribute('href', dataUri);
-            linkElement.setAttribute('download', exportFileName);
-            document.body.appendChild(linkElement);
-            linkElement.click();
-            document.body.removeChild(linkElement);
-            
-            console.log('✅ 导出聊天记录完成');
+            // 方案1: 使用 Blob + URL.createObjectURL（兼容性最好）
+            try {
+                const blob = new Blob([dataStr], { type: 'application/json;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                
+                const linkElement = document.createElement('a');
+                linkElement.href = url;
+                linkElement.download = exportFileName;
+                linkElement.style.display = 'none';
+                document.body.appendChild(linkElement);
+                
+                // 强制触发点击（适配移动端）
+                linkElement.dispatchEvent(new MouseEvent('click', {
+                    view: window,
+                    bubbles: true,
+                    cancelable: true
+                }));
+                
+                // 清理
+                setTimeout(() => {
+                    document.body.removeChild(linkElement);
+                    URL.revokeObjectURL(url);
+                }, 100);
+                
+                console.log('✅ 导出聊天记录完成（Blob方案）');
+            } catch (error) {
+                console.warn('Blob方案失败，尝试data URI方案:', error);
+                
+                // 方案2: 降级使用 data URI（某些浏览器不支持Blob）
+                try {
+                    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+                    const linkElement = document.createElement('a');
+                    linkElement.setAttribute('href', dataUri);
+                    linkElement.setAttribute('download', exportFileName);
+                    linkElement.style.display = 'none';
+                    document.body.appendChild(linkElement);
+                    
+                    linkElement.dispatchEvent(new MouseEvent('click', {
+                        view: window,
+                        bubbles: true,
+                        cancelable: true
+                    }));
+                    
+                    setTimeout(() => {
+                        document.body.removeChild(linkElement);
+                    }, 100);
+                    
+                    console.log('✅ 导出聊天记录完成（data URI方案）');
+                } catch (error2) {
+                    // 方案3: 降级使用 window.open（最后的救命稻草）
+                    console.warn('data URI方案也失败，使用window.open:', error2);
+                    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+                    window.open(dataUri, '_blank');
+                    alert('已在新标签页打开备份数据。请长按保存或复制内容。');
+                    console.log('✅ 导出聊天记录完成（window.open方案）');
+                }
+            }
         });
         
         /**
@@ -5003,12 +5143,6 @@
             const file = event.target.files[0];
             if (!file) return;
             
-            // 确认操作
-            if (!confirm('导入聊天记录将覆盖当前所有对话内容，此操作无法撤销。\n\n确定要继续吗？')) {
-                event.target.value = ''; // 清空文件选择
-                return;
-            }
-            
             if (file.type === "application/json") {
                 const reader = new FileReader();
 
@@ -5016,56 +5150,28 @@
                     try {
                         const importedData = JSON.parse(e.target.result);
                         
+                        // 解析导入数据
+                        let importedChatHistory = [];
+                        let importedLongTermMemory = null;
+                        let importedPendingSummaryBubbles = [];
+                        
                         // 兼容旧格式(直接导出chatHistory数组)和新格式(包含完整数据的对象)
                         if (Array.isArray(importedData)) {
                             // 旧格式：直接是chatHistory数组
                             console.log('📥 检测到旧格式导入数据');
-                            chatHistory = importedData;
-                            // 重置其他数据
-                            pendingSummaryBubbles = [];
-                            // longTermMemory保持不变或重置
+                            importedChatHistory = importedData;
                         } else if (importedData.chatHistory) {
                             // 新格式：包含完整数据
                             console.log('📥 检测到新格式导入数据');
-                            chatHistory = importedData.chatHistory || [];
-                            longTermMemory = importedData.longTermMemory || {
-                                basic_info: {},
-                                relationships: "",
-                                emotional_profile: "",
-                                important_events: [],
-                                metadata: {
-                                    total_messages: 0,
-                                    last_summary_at: 0,
-                                    last_updated: new Date().toISOString(),
-                                    version: 2,
-                                    next_memory_id: 1
-                                }
-                            };
-                            pendingSummaryBubbles = importedData.pendingSummaryBubbles || [];
+                            importedChatHistory = importedData.chatHistory || [];
+                            importedLongTermMemory = importedData.longTermMemory || null;
+                            importedPendingSummaryBubbles = importedData.pendingSummaryBubbles || [];
                         } else {
                             throw new Error('不支持的文件格式');
                         }
                         
-                        // 保存到正确的localStorage键
-                        if (currentCharacterId) {
-                            localStorage.setItem(`char_${currentCharacterId}_chatHistory`, JSON.stringify(chatHistory));
-                            localStorage.setItem(`char_${currentCharacterId}_longTermMemory`, JSON.stringify(longTermMemory));
-                            localStorage.setItem(`char_${currentCharacterId}_pendingSummaryBubbles`, JSON.stringify(pendingSummaryBubbles));
-                        } else {
-                            // 兼容旧版本，保存到全局键
-                            localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
-                            localStorage.setItem('longTermMemory', JSON.stringify(longTermMemory));
-                            localStorage.setItem('pendingSummaryBubbles', JSON.stringify(pendingSummaryBubbles));
-                        }
-                        
-                        // 重新渲染聊天
-                        loadHistoryUI();
-                        
-                        // 更新记忆状态显示
-                        updateMemoryStatus();
-                        
-                        alert('✅ 聊天记录导入成功！');
-                        console.log('✅ 导入完成，chatHistory长度:', chatHistory.length);
+                        // 显示导入模式选择对话框
+                        showImportModeDialog(importedChatHistory, importedLongTermMemory, importedPendingSummaryBubbles);
                         event.target.value = ''; // 清空文件选择
                     } catch (error) {
                         console.error('❌ 导入失败:', error);
@@ -5079,6 +5185,100 @@
                 event.target.value = ''; // 清空文件选择
             }
         });
+        
+        /**
+         * 显示导入模式选择对话框
+         */
+        function showImportModeDialog(importedChatHistory, importedLongTermMemory, importedPendingSummaryBubbles) {
+            const dialog = document.getElementById('import-mode-dialog');
+            
+            // 更新统计信息
+            document.getElementById('import-current-count').textContent = chatHistory.length;
+            document.getElementById('import-new-count').textContent = importedChatHistory.length;
+            
+            // 存储导入数据到临时变量
+            window.pendingImportData = {
+                chatHistory: importedChatHistory,
+                longTermMemory: importedLongTermMemory,
+                pendingSummaryBubbles: importedPendingSummaryBubbles
+            };
+            
+            dialog.style.display = 'flex';
+        }
+        
+        /**
+         * 关闭导入模式对话框
+         */
+        function closeImportModeDialog() {
+            const dialog = document.getElementById('import-mode-dialog');
+            dialog.style.display = 'none';
+            window.pendingImportData = null;
+        }
+        
+        /**
+         * 执行导入操作
+         */
+        function executeImport(mode) {
+            if (!window.pendingImportData) {
+                alert('❌ 导入数据丢失，请重新选择文件');
+                return;
+            }
+            
+            const { chatHistory: importedChatHistory, longTermMemory: importedLongTermMemory, pendingSummaryBubbles: importedPendingSummaryBubbles } = window.pendingImportData;
+            
+            if (mode === 'replace') {
+                // 全面覆盖模式
+                console.log('📥 执行全面覆盖导入');
+                chatHistory = importedChatHistory;
+                if (importedLongTermMemory) {
+                    longTermMemory = importedLongTermMemory;
+                }
+                pendingSummaryBubbles = importedPendingSummaryBubbles;
+            } else if (mode === 'merge') {
+                // 融入模式：按时间戳合并
+                console.log('📥 执行融入导入，开始合并聊天记录');
+                
+                // 合并聊天记录，按时间戳排序
+                const mergedHistory = [...chatHistory, ...importedChatHistory];
+                mergedHistory.sort((a, b) => {
+                    const timeA = new Date(a.timestamp || 0).getTime();
+                    const timeB = new Date(b.timestamp || 0).getTime();
+                    return timeA - timeB;
+                });
+                
+                chatHistory = mergedHistory;
+                
+                // 合并待总结的气泡
+                const mergedPending = [...pendingSummaryBubbles, ...importedPendingSummaryBubbles];
+                pendingSummaryBubbles = mergedPending;
+                
+                console.log('✅ 融入完成，合并后总消息数:', chatHistory.length);
+            }
+            
+            // 保存到正确的localStorage键
+            if (currentCharacterId) {
+                localStorage.setItem(`char_${currentCharacterId}_chatHistory`, JSON.stringify(chatHistory));
+                localStorage.setItem(`char_${currentCharacterId}_longTermMemory`, JSON.stringify(longTermMemory));
+                localStorage.setItem(`char_${currentCharacterId}_pendingSummaryBubbles`, JSON.stringify(pendingSummaryBubbles));
+            } else {
+                // 兼容旧版本，保存到全局键
+                localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+                localStorage.setItem('longTermMemory', JSON.stringify(longTermMemory));
+                localStorage.setItem('pendingSummaryBubbles', JSON.stringify(pendingSummaryBubbles));
+            }
+            
+            // 重新渲染聊天（只加载最后50条）
+            loadHistoryUI();
+            
+            // 更新记忆状态显示
+            updateMemoryStatus();
+            
+            // 关闭对话框
+            closeImportModeDialog();
+            
+            showToast(`✅ 聊天记录${mode === 'replace' ? '覆盖' : '融入'}导入成功！`);
+            console.log('✅ 导入完成，chatHistory长度:', chatHistory.length);
+        }
 
         /**
          * 更新发送按钮的状态
@@ -6891,6 +7091,7 @@ ${conversationText}
             
             // 确定要处理的气泡范围
             let bubblesToProcess = [];
+            let shouldClearMemory = false; // 是否清空现有记忆
             
             switch (mode) {
                 case 'pending':
@@ -6899,21 +7100,25 @@ ${conversationText}
                     break;
                     
                 case 'all':
-                    // 清空现有记忆，从头开始
-                    if (!confirm('此操作将清空现有记忆并重新生成。确定继续吗？')) {
-                        return;
+                    // 从头开始 - 显示选择对话框
+                    const allModeChoice = await showBatchGenerateModeDialog('all', chatHistory.length);
+                    if (!allModeChoice) return; // 用户取消
+                    
+                    shouldClearMemory = (allModeChoice === 'replace');
+                    if (shouldClearMemory) {
+                        longTermMemory = {
+                            basic_info: {},
+                            emotional_profile: "",
+                            important_events: [],
+                            metadata: {
+                                total_messages: 0,
+                                last_summary_at: 0,
+                                last_updated: null,
+                                version: 2,
+                                next_memory_id: 1
+                            }
+                        };
                     }
-                    longTermMemory = {
-                        basic_info: {},
-                        emotional_profile: "",
-                        important_events: [],
-                        metadata: {
-                            total_messages: 0,
-                            last_summary_at: 0,
-                            last_updated: null,
-                            version: 1
-                        }
-                    };
                     bubblesToProcess = [...chatHistory];
                     break;
                     
@@ -6922,21 +7127,25 @@ ${conversationText}
                     const recentCount = parseInt(document.getElementById('batch-recent-count').value) || 500;
                     const startIndex = Math.max(0, chatHistory.length - recentCount);
                     
-                    // 清空现有记忆
-                    if (!confirm(`此操作将清空现有记忆，并从最近 ${recentCount} 条重新生成。确定继续吗？`)) {
-                        return;
+                    // 显示选择对话框
+                    const recentModeChoice = await showBatchGenerateModeDialog('recent', recentCount);
+                    if (!recentModeChoice) return; // 用户取消
+                    
+                    shouldClearMemory = (recentModeChoice === 'replace');
+                    if (shouldClearMemory) {
+                        longTermMemory = {
+                            basic_info: {},
+                            emotional_profile: "",
+                            important_events: [],
+                            metadata: {
+                                total_messages: 0,
+                                last_summary_at: 0,
+                                last_updated: null,
+                                version: 2,
+                                next_memory_id: 1
+                            }
+                        };
                     }
-                    longTermMemory = {
-                        basic_info: {},
-                        emotional_profile: "",
-                        important_events: [],
-                        metadata: {
-                            total_messages: 0,
-                            last_summary_at: 0,
-                            last_updated: null,
-                            version: 1
-                        }
-                    };
                     bubblesToProcess = chatHistory.slice(startIndex);
                     break;
             }
@@ -7013,10 +7222,65 @@ ${conversationText}
             }, 3000);
         }
         
+        /**
+         * 显示批量生成模式选择对话框
+         * @param {string} batchMode - 'all' 或 'recent'
+         * @param {number} count - 处理的消息数量
+         * @returns {Promise<string|null>} - 'replace'(覆盖) 或 'continue'(继续) 或 null(取消)
+         */
+        function showBatchGenerateModeDialog(batchMode, count) {
+            return new Promise((resolve) => {
+                const dialog = document.getElementById('batch-mode-dialog');
+                const titleEl = document.getElementById('batch-mode-title');
+                const descEl = document.getElementById('batch-mode-desc');
+                
+                // 更新对话框内容
+                if (batchMode === 'all') {
+                    titleEl.textContent = '从头生成所有记忆';
+                    descEl.textContent = `将处理全部 ${count} 条消息`;
+                } else if (batchMode === 'recent') {
+                    titleEl.textContent = `从最近 ${count} 条生成记忆`;
+                    descEl.textContent = `将处理最近 ${count} 条消息`;
+                }
+                
+                // 设置按钮事件
+                const replaceBtn = document.getElementById('batch-mode-replace-btn');
+                const continueBtn = document.getElementById('batch-mode-continue-btn');
+                const cancelBtn = document.getElementById('batch-mode-cancel-btn');
+                
+                // 移除旧的事件监听器并添加新的
+                const newReplaceBtn = replaceBtn.cloneNode(true);
+                const newContinueBtn = continueBtn.cloneNode(true);
+                const newCancelBtn = cancelBtn.cloneNode(true);
+                
+                replaceBtn.parentNode.replaceChild(newReplaceBtn, replaceBtn);
+                continueBtn.parentNode.replaceChild(newContinueBtn, continueBtn);
+                cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+                
+                newReplaceBtn.onclick = () => {
+                    dialog.style.display = 'none';
+                    resolve('replace');
+                };
+                
+                newContinueBtn.onclick = () => {
+                    dialog.style.display = 'none';
+                    resolve('continue');
+                };
+                
+                newCancelBtn.onclick = () => {
+                    dialog.style.display = 'none';
+                    resolve(null);
+                };
+                
+                dialog.style.display = 'flex';
+            });
+        }
+        
         // ========== 长期记忆导入导出 ==========
         
         /**
          * 导出长期记忆
+         * 改进版本：支持小米浏览器等多种浏览器
          */
         function exportMemory() {
             if (!longTermMemory.metadata?.last_updated) {
@@ -7031,16 +7295,67 @@ ${conversationText}
             };
             
             const dataStr = JSON.stringify(memoryData, null, 2);
-            const blob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `long_term_memory_${new Date().toISOString().split('T')[0]}.json`;
-            link.click();
-            
-            URL.revokeObjectURL(url);
-            showToast('✅ 记忆已导出');
+            const fileName = `long_term_memory_${new Date().toISOString().split('T')[0]}.json`;
+
+            // 方案1: 使用 Blob + URL.createObjectURL（推荐）
+            try {
+                const blob = new Blob([dataStr], { type: 'application/json;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                
+                // 强制触发点击
+                link.dispatchEvent(new MouseEvent('click', {
+                    view: window,
+                    bubbles: true,
+                    cancelable: true
+                }));
+                
+                // 延迟清理
+                setTimeout(() => {
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                }, 100);
+                
+                showToast('✅ 记忆已导出');
+                console.log('✅ 记忆导出完成（Blob方案）');
+            } catch (error) {
+                console.warn('Blob方案失败，尝试data URI方案:', error);
+                
+                // 方案2: 降级使用 data URI
+                try {
+                    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+                    const link = document.createElement('a');
+                    link.href = dataUri;
+                    link.download = fileName;
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    
+                    link.dispatchEvent(new MouseEvent('click', {
+                        view: window,
+                        bubbles: true,
+                        cancelable: true
+                    }));
+                    
+                    setTimeout(() => {
+                        document.body.removeChild(link);
+                    }, 100);
+                    
+                    showToast('✅ 记忆已导出');
+                    console.log('✅ 记忆导出完成（data URI方案）');
+                } catch (error2) {
+                    // 方案3: window.open 降级
+                    console.warn('data URI方案也失败，使用window.open:', error2);
+                    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+                    window.open(dataUri, '_blank');
+                    showToast('已在新标签页打开，请长按保存或复制');
+                    console.log('✅ 记忆导出完成（window.open方案）');
+                }
+            }
         }
         
         /**
