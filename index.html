@@ -2475,10 +2475,10 @@
                             <option value="">-- 请先拉取模型列表 --</option>
                         </select>
                         <button onclick="fetchModels()" style="padding: 10px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; font-size: 14px;">
-                            🔄 拉取
+                            拉取
                         </button>
                         <button onclick="testConnection()" style="padding: 10px 16px; background-color: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; font-size: 14px;">
-                            🔍 测试
+                            测试
                         </button>
                     </div>
                     <div id="model-fetch-status" style="font-size: 12px; margin-top: 6px; color: #666;"></div>
@@ -2646,21 +2646,21 @@
                 <div style="margin-top: 15px;">
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button onclick="showBatchGenerateDialog()" style="padding: 10px 20px; background-color: #FF9800; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
-                            🔄 批量生成记忆
+                            批量生成记忆
                         </button>
                         <button onclick="generateMemorySummary(true)" style="padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
-                            🧠 立即生成（待总结）
+                            立即生成（待总结）
                         </button>
                         <button onclick="editMemory()" style="padding: 10px 20px; background-color: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
-                            ✏️ 查看/编辑记忆
+                            查看/编辑记忆
                         </button>
                         <button onclick="clearMemory()" style="padding: 10px 20px; background-color: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
-                            🗑️ 清空记忆
+                            清空记忆
                         </button>
                     </div>
                     
                     <div style="margin-top: 8px; padding: 8px 12px; background: #e3f2fd; border-radius: 6px; font-size: 12px; color: #1565C0;">
-                        💡 <strong>提示：</strong>点击"查看/编辑记忆"可以预填写基本信息（姓名、年龄、职业等），让AI更好地了解你
+                        <strong>提示：</strong>点击"查看/编辑记忆"可以预填写基本信息（姓名、年龄、职业等），让AI更好地了解你
                     </div>
                     
                     <div id="memory-status" style="margin-top: 10px; padding: 10px; background-color: #f0f0f0; border-radius: 4px; font-size: 0.9em;">
@@ -2673,6 +2673,57 @@
                     </div>
                 </div>
                 
+                <hr>
+                <!-- 记忆优化 Beta -->
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 4px;">记忆优化 <span style="font-size:11px;background:#FF9800;color:#fff;padding:2px 6px;border-radius:10px;vertical-align:middle;">Beta</span></h3>
+                    <p style="font-size:0.8em;color:#888;margin:0 0 12px;">开启后，每次发送消息前会用小模型从长期记忆中筛选最相关的部分，降低 token 消耗并提升回复质量。</p>
+
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                        <label style="font-size:14px;color:#333;">开启记忆优化</label>
+                        <label style="position:relative;display:inline-block;width:44px;height:24px;">
+                            <input type="checkbox" id="memory-optimize-toggle" style="opacity:0;width:0;height:0;">
+                            <span id="memory-optimize-slider" style="position:absolute;cursor:pointer;inset:0;background:#ccc;border-radius:24px;transition:.3s;">
+                                <span style="position:absolute;left:3px;top:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.3s;display:block;" id="memory-optimize-knob"></span>
+                            </span>
+                        </label>
+                    </div>
+
+                    <div id="memory-optimize-config" style="display:none;">
+                        <p style="font-size:13px;color:#555;margin:0 0 10px;">为记忆优化选择一个服务商（建议选便宜的模型，不要选 thinking 类型）：</p>
+                        <div style="background:#f9f9f9;border:1px solid #e0e0e0;border-radius:8px;padding:12px;margin-bottom:12px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                                <span style="font-size:13px;font-weight:600;color:#333;">记忆优化服务商</span>
+                                <button onclick="_moAdd()" style="padding:4px 10px;background:#1AAD19;color:#fff;border:none;border-radius:4px;font-size:12px;cursor:pointer;">+ 添加</button>
+                            </div>
+                            <div id="mo-provider-list"></div>
+                            <div id="mo-provider-form" style="display:none;margin-top:10px;background:#fff;border:1px solid #ddd;border-radius:6px;padding:10px;">
+                                <div style="font-size:12px;font-weight:600;margin-bottom:8px;" id="mo-form-title">添加服务商</div>
+                                <input id="mo-name" type="text" placeholder="名称" style="width:100%;box-sizing:border-box;padding:7px;border:1px solid #ccc;border-radius:4px;margin-bottom:6px;font-size:13px;">
+                                <input id="mo-url"  type="text" placeholder="Base URL" style="width:100%;box-sizing:border-box;padding:7px;border:1px solid #ccc;border-radius:4px;margin-bottom:6px;font-size:13px;">
+                                <input id="mo-key"  type="password" placeholder="API Key" style="width:100%;box-sizing:border-box;padding:7px;border:1px solid #ccc;border-radius:4px;margin-bottom:8px;font-size:13px;">
+                                <div style="display:flex;gap:8px;">
+                                    <button onclick="_moSave()" style="flex:1;padding:8px;background:#1AAD19;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;">保存</button>
+                                    <button onclick="_moFormClose()" style="flex:1;padding:8px;background:#999;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;">取消</button>
+                                </div>
+                                <input type="hidden" id="mo-edit-id">
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom:10px;">
+                            <label style="font-size:13px;color:#333;display:block;margin-bottom:4px;">记忆优化使用的模型</label>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <select id="mo-modelname" style="flex:1;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:13px;background:#fff;">
+                                    <option value="">-- 请先拉取模型列表 --</option>
+                                </select>
+                                <button onclick="moFetchModels()" style="padding:8px 12px;background:#4CAF50;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;">拉取</button>
+                            </div>
+                            <p style="font-size:11px;color:#f57c00;margin:4px 0 0;">建议选择便宜的模型（如 flash、mini 系列），不要选 thinking 类型</p>
+                        </div>
+                        <p style="font-size:11px;color:#999;margin:0;">如未配置，默认使用主模型的服务商和 API Key</p>
+                    </div>
+                </div>
+
                 <button id="save-settings-btn" onclick="saveSettings()">保存并生效</button>
                 
                 <h3>数据管理</h3>
@@ -2680,68 +2731,68 @@
                 <!-- 聊天记录区块 -->
                 <div style="background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
                     <div style="font-size: 15px; font-weight: 600; color: #333; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-                        💬 聊天记录管理
+                        聊天记录管理
                     </div>
                     <div style="font-size: 13px; color: #666; margin-bottom: 12px; line-height: 1.5;">
                         导出或导入完整的聊天记录，包含所有对话内容和时间戳。
                     </div>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
                         <button id="export-btn" style="padding: 8px 16px; background-color: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
-                            💾 导出聊天记录
+                            导出聊天记录
                         </button>
                         <button onclick="document.getElementById('import-file').click()" style="padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
-                            📥 导入聊天记录
+                            导入聊天记录
                         </button>
                     </div>
                     <input type="file" id="import-file" accept=".json" style="display: none;">
                     <div style="padding: 8px 12px; background: #fff3cd; border-radius: 6px; font-size: 12px; color: #856404;">
-                        ⚠️ <strong>注意：</strong>导入聊天记录将覆盖当前所有对话内容，此操作无法撤销
+                        <strong>注意：</strong>导入聊天记录将覆盖当前所有对话内容，此操作无法撤销
                     </div>
                 </div>
 
                 <!-- 长期记忆区块 -->
                 <div style="background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
                     <div style="font-size: 15px; font-weight: 600; color: #333; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-                        🧠 长期记忆管理
+                        长期记忆管理
                     </div>
                     <div style="font-size: 13px; color: #666; margin-bottom: 12px; line-height: 1.5;">
                         导出或导入长期记忆（基本信息、情感倾向、重要事件），支持智能合并或直接覆盖。
                     </div>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button onclick="exportMemory()" style="padding: 8px 16px; background-color: #9C27B0; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                            💾 导出长期记忆
+                            导出长期记忆
                         </button>
                         <button onclick="document.getElementById('import-memory-file').click()" style="padding: 8px 16px; background-color: #FF9800; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                            📥 导入长期记忆
+                            导入长期记忆
                         </button>
                     </div>
                     <input type="file" id="import-memory-file" accept=".json" style="display: none;">
                     <div style="margin-top: 12px; padding: 10px; background: #e3f2fd; border-radius: 6px; font-size: 12px; color: #1565C0;">
-                        💡 <strong>提示：</strong>导入时可选择"智能合并"（需调用1次API）或"直接覆盖"模式
+                        <strong>提示：</strong>导入时可选择"智能合并"（需调用1次API）或"直接覆盖"模式
                     </div>
                 </div>
                 
                 <!-- 好友管理区块 -->
                 <div style="background: #fff5f5; border: 1px solid #ffcdd2; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
                     <div style="font-size: 15px; font-weight: 600; color: #c62828; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-                        ⚠️ 危险操作
+                        危险操作
                     </div>
                     <div style="font-size: 13px; color: #666; margin-bottom: 12px; line-height: 1.5;">
                         以下操作不可恢复,请谨慎操作
                     </div>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button onclick="clearChat()" style="padding: 8px 16px; background-color: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                            🗑️ 清空聊天记录
+                            清空聊天记录
                         </button>
                         <button onclick="blockCharacter()" style="padding: 8px 16px; background-color: #757575; color: white; border: none; border-radius: 4px; cursor: pointer; opacity: 0.5;">
-                            🚫 拉黑好友
+                            拉黑好友
                         </button>
                         <button onclick="deleteCharacter()" style="padding: 8px 16px; background-color: #d32f2f; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                            🗑️ 删除好友
+                            删除好友
                         </button>
                     </div>
                     <div style="margin-top: 12px; padding: 10px; background: #ffebee; border-radius: 6px; font-size: 12px; color: #c62828;">
-                        ⚠️ <strong>警告：</strong>删除好友将永久清除该角色的所有聊天记录、长期记忆和配置数据,此操作无法撤销!
+                        <strong>警告：</strong>删除好友将永久清除该角色的所有聊天记录、长期记忆和配置数据,此操作无法撤销!
                     </div>
                 </div>
             </div>
@@ -5112,20 +5163,9 @@
             const dataSize = new Blob([dataStr]).size;
             const dataSizeMB = (dataSize / 1024 / 1024).toFixed(2);
 
-            // 检测是否为小米浏览器
-            const isMiuiBrowser = /MiuiBrowser/i.test(navigator.userAgent);
-            
-            // 给用户选择导出方式
-            let exportMethod = '';
-            if (isMiuiBrowser) {
-                // 小米浏览器：默认推荐分段复制，但允许尝试直接下载
-                const choice = confirm(`📦 备份大小：${dataSizeMB} MB\n\n检测到您使用小米浏览器\n小米浏览器可能无法直接下载文件\n\n推荐方式：分段复制到剪贴板\n备用方式：尝试直接下载\n\n点击"确定"使用分段复制（推荐）\n点击"取消"尝试直接下载`);
-                exportMethod = choice ? 'clipboard' : 'download';
-            } else {
-                // 非小米浏览器：默认推荐直接下载，但提供分段复制选项
-                const choice = confirm(`📦 备份大小：${dataSizeMB} MB\n\n导出方式：\n\n✅ 直接下载（推荐）\n   - 自动保存为文件\n   - 适合大部分浏览器\n\n📋 分段复制\n   - 手动复制粘贴\n   - 适合下载失败时使用\n\n点击"确定"直接下载\n点击"取消"使用分段复制`);
-                exportMethod = choice ? 'download' : 'clipboard';
-            }
+            // 三按钮弹窗选择导出方式
+            const exportMethod = await showExportMethodPicker(`备份大小：${dataSizeMB} MB`);
+            if (exportMethod === 'cancel') return;
             
             // 执行对应的导出方法
             if (exportMethod === 'clipboard') {
@@ -5554,7 +5594,6 @@
             // 渲染菜单
             bubbleMenu.innerHTML = menuItems.map(item => `
                 <div class="bubble-menu-item ${item.danger ? 'danger' : ''}" data-action="${item.text}">
-                    <span class="icon">${item.icon}</span>
                     <span>${item.text}</span>
                 </div>
             `).join('');
@@ -7433,18 +7472,9 @@ ${conversationText}
             const dataSize = new Blob([dataStr]).size;
             const dataSizeMB = (dataSize / 1024 / 1024).toFixed(2);
 
-            // 检测是否为小米浏览器
-            const isMiuiBrowser = /MiuiBrowser/i.test(navigator.userAgent);
-            
-            // 给用户选择导出方式
-            let exportMethod = '';
-            if (isMiuiBrowser) {
-                const choice = confirm(`🧠 记忆大小：${dataSizeMB} MB\n\n检测到小米浏览器\n\n点击"确定"复制到剪贴板\n点击"取消"尝试直接下载`);
-                exportMethod = choice ? 'clipboard' : 'download';
-            } else {
-                const choice = confirm(`🧠 记忆大小：${dataSizeMB} MB\n\n点击"确定"直接下载\n点击"取消"复制到剪贴板`);
-                exportMethod = choice ? 'download' : 'clipboard';
-            }
+            // 三按钮弹窗选择导出方式
+            const exportMethod = await showExportMethodPicker(`记忆大小：${dataSizeMB} MB`);
+            if (exportMethod === 'cancel') return;
             
             if (exportMethod === 'clipboard') {
                 // 复制到剪贴板
@@ -8615,8 +8645,21 @@ ${JSON.stringify(importedMemoryData, null, 2)}
             // E. 构建最终的 Messages 列表
             let finalSystemPrompt = config.systemPrompt;
             
-            // 添加长期记忆到系统提示
+            // 添加长期记忆到系统提示（支持记忆优化筛选）
             if (longTermMemory && longTermMemory.metadata) {
+                // 获取本次要注入的 important_events
+                let eventsToInject = longTermMemory.important_events || [];
+                
+                // 如果开启了记忆优化，先用小模型筛选
+                if (localStorage.getItem('memoryOptimizeEnabled') === '1' && eventsToInject.length > 0) {
+                    try {
+                        const recentUserContent = apiMessages.filter(m => m.role === 'user').slice(-3).map(m => m.content).join('\n');
+                        eventsToInject = await filterMemoriesBySmallModel(recentUserContent, eventsToInject);
+                    } catch(e) {
+                        console.warn('记忆优化筛选失败，使用全量记忆:', e);
+                    }
+                }
+                
                 let memoryPrompt = '\n\n=== 长期记忆 ===\n\n';
                 
                 // 添加基本信息
@@ -8638,10 +8681,9 @@ ${JSON.stringify(importedMemoryData, null, 2)}
                     memoryPrompt += `人际关系: ${longTermMemory.relationships}\n\n`;
                 }
                 
-                // 添加所有记忆（按last_mentioned倒序）
-                if (longTermMemory.important_events && longTermMemory.important_events.length > 0) {
-                    // 按last_mentioned倒序排序（最近的在前）
-                    const sortedMemories = [...longTermMemory.important_events].sort((a, b) => 
+                // 添加筛选后的记忆
+                if (eventsToInject.length > 0) {
+                    const sortedMemories = [...eventsToInject].sort((a, b) => 
                         new Date(b.last_mentioned) - new Date(a.last_mentioned)
                     );
                     
@@ -10642,6 +10684,402 @@ ${JSON.stringify(importedMemoryData, null, 2)}
         }
         
         
+    </script>
+
+    <!-- ===== 记忆优化 Beta ===== -->
+    <script>
+    // ---- 开关交互 ----
+    (function() {
+        function syncToggleUI(enabled) {
+            const slider = document.getElementById('memory-optimize-slider');
+            const knob   = document.getElementById('memory-optimize-knob');
+            const cfg    = document.getElementById('memory-optimize-config');
+            if (!slider) return;
+            slider.style.background = enabled ? '#1AAD19' : '#ccc';
+            knob.style.left = enabled ? '23px' : '3px';
+            if (cfg) cfg.style.display = enabled ? 'block' : 'none';
+        }
+
+        function initMemoryOptimizeUI() {
+            const toggle = document.getElementById('memory-optimize-toggle');
+            if (!toggle) return;
+            const enabled = localStorage.getItem('memoryOptimizeEnabled') === '1';
+            toggle.checked = enabled;
+            syncToggleUI(enabled);
+            toggle.addEventListener('change', () => {
+                localStorage.setItem('memoryOptimizeEnabled', toggle.checked ? '1' : '0');
+                syncToggleUI(toggle.checked);
+            });
+            _moRender();
+            const savedModel = localStorage.getItem('moModelname') || '';
+            if (savedModel) {
+                const sel = document.getElementById('mo-modelname');
+                if (sel) {
+                    let opt = sel.querySelector(`option[value="${CSS.escape(savedModel)}"]`);
+                    if (!opt) { opt = document.createElement('option'); opt.value = savedModel; opt.textContent = savedModel; sel.appendChild(opt); }
+                    sel.value = savedModel;
+                }
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initMemoryOptimizeUI);
+        } else {
+            initMemoryOptimizeUI();
+        }
+        const _origOpen = window.openSettings;
+        window.openSettings = function() {
+            if (_origOpen) _origOpen.apply(this, arguments);
+            setTimeout(initMemoryOptimizeUI, 50);
+        };
+    })();
+
+    // ---- 记忆优化 Provider 管理 ----
+    function _moLoad() { try { return JSON.parse(localStorage.getItem('moProviders') || '[]'); } catch(e) { return []; } }
+    function _moSaveAll(list) { localStorage.setItem('moProviders', JSON.stringify(list)); }
+    function _moActiveId() { return localStorage.getItem('moActiveId') || ''; }
+    function _moSetActive(id) { localStorage.setItem('moActiveId', id); _moRender(); }
+
+    function _moRender() {
+        const container = document.getElementById('mo-provider-list');
+        if (!container) return;
+        const list = _moLoad(), activeId = _moActiveId();
+        if (!list.length) {
+            container.innerHTML = '<div style="color:#aaa;font-size:12px;text-align:center;padding:6px 0;">暂无配置（留空则使用主模型配置）</div>';
+            return;
+        }
+        container.innerHTML = list.map(p => {
+            const active = p.id === activeId;
+            return `<div onclick="_moSetActive('${p.id}')" style="display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:6px;border:1.5px solid ${active?'#1AAD19':'#ddd'};background:${active?'#f0fff0':'#fff'};margin-bottom:6px;cursor:pointer;">
+                <div style="flex:1;min-width:0;">
+                    <div style="font-size:13px;font-weight:600;color:${active?'#1AAD19':'#333'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${active?'✓ ':''}<span style="font-weight:normal">${_moEsc(p.name||'未命名')}</span></div>
+                    <div style="font-size:11px;color:#999;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_moEsc(p.url||'')}</div>
+                </div>
+                <button onclick="event.stopPropagation();_moEdit('${p.id}')" style="padding:2px 7px;font-size:11px;background:#eee;border:none;border-radius:4px;cursor:pointer;">编辑</button>
+                <button onclick="event.stopPropagation();_moDel('${p.id}')" style="padding:2px 7px;font-size:11px;background:#fee;border:none;border-radius:4px;cursor:pointer;color:#d32f2f;">删除</button>
+            </div>`;
+        }).join('');
+    }
+    function _moEsc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function _moAdd() {
+        document.getElementById('mo-form-title').textContent = '添加服务商';
+        document.getElementById('mo-edit-id').value = '';
+        ['mo-name','mo-url','mo-key'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('mo-provider-form').style.display = 'block';
+    }
+    function _moEdit(id) {
+        const p = _moLoad().find(x => x.id === id); if (!p) return;
+        document.getElementById('mo-form-title').textContent = '编辑服务商';
+        document.getElementById('mo-edit-id').value = id;
+        document.getElementById('mo-name').value = p.name||'';
+        document.getElementById('mo-url').value  = p.url||'';
+        document.getElementById('mo-key').value  = p.key||'';
+        document.getElementById('mo-provider-form').style.display = 'block';
+    }
+    function _moSave() {
+        const name = document.getElementById('mo-name').value.trim()||'未命名';
+        const url  = document.getElementById('mo-url').value.trim();
+        const key  = document.getElementById('mo-key').value.trim();
+        const editId = document.getElementById('mo-edit-id').value;
+        if (!url) { showToast('请填写 Base URL'); return; }
+        const list = _moLoad();
+        if (editId) { const idx=list.findIndex(x=>x.id===editId); if(idx>=0) list[idx]={id:editId,name,url,key}; }
+        else { const id='mo'+Date.now(); list.push({id,name,url,key}); if(!_moActiveId()) _moSetActive(id); }
+        _moSaveAll(list); _moRender(); _moFormClose(); showToast('已保存');
+    }
+    function _moFormClose() { document.getElementById('mo-provider-form').style.display = 'none'; }
+    function _moDel(id) {
+        if (!confirm('确定删除？')) return;
+        const list = _moLoad().filter(x=>x.id!==id);
+        _moSaveAll(list);
+        if (_moActiveId()===id) localStorage.setItem('moActiveId', list[0]?.id||'');
+        _moRender();
+    }
+    async function moFetchModels() {
+        const p = _moLoad().find(x=>x.id===_moActiveId()) || _moLoad()[0];
+        const url = (p?.url || window.config?.baseurl||'').replace(/\/$/,'');
+        const key = p?.key || window.config?.apikey||'';
+        if (!url) { showToast('请先添加服务商'); return; }
+        showToast('拉取中...');
+        try {
+            const resp = await fetch(url+'/models', { headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json'} });
+            const data = await resp.json();
+            const sel = document.getElementById('mo-modelname');
+            const saved = localStorage.getItem('moModelname')||'';
+            sel.innerHTML = '<option value="">-- 选择模型 --</option>';
+            (data.data||[]).sort((a,b)=>a.id.localeCompare(b.id)).forEach(m=>{
+                const opt=document.createElement('option'); opt.value=m.id; opt.textContent=m.id;
+                if(m.id===saved) opt.selected=true; sel.appendChild(opt);
+            });
+            showToast('拉取成功');
+        } catch(e) { showToast('拉取失败: '+e.message); }
+    }
+
+    // 保存设置时保存记忆优化模型
+    const _origSS = window.saveSettings;
+    window.saveSettings = function() {
+        if (_origSS) _origSS.apply(this, arguments);
+        const sel = document.getElementById('mo-modelname');
+        if (sel && sel.value) localStorage.setItem('moModelname', sel.value);
+    };
+
+    // ---- 核心：用小模型筛选记忆 ----
+    async function filterMemoriesBySmallModel(recentUserContent, allEvents) {
+        const p = _moLoad().find(x=>x.id===_moActiveId()) || _moLoad()[0];
+        const moUrl   = (p?.url  || window.config?.baseurl||'').replace(/\/$/,'');
+        const moKey   = p?.key   || window.config?.apikey||'';
+        const moModel = localStorage.getItem('moModelname') || window.config?.modelname||'';
+        if (!moUrl||!moKey||!moModel) throw new Error('记忆优化未完整配置');
+
+        const today = new Date(); today.setHours(0,0,0,0);
+        const yest  = new Date(today); yest.setDate(today.getDate()-1);
+
+        const summaries = allEvents.map((e,i)=>{
+            const score = (e.importance||1)*(e.mention_count||1);
+            return `[${i}] ${e.title} | 最后提及:${e.last_mentioned} | 提及:${e.mention_count||1} | 重要度:${e.importance||1} | 分:${score}`;
+        }).join('\n');
+
+        const prompt = `你是记忆筛选助手，根据用户最新消息从记忆列表中选出最相关条目，只返回JSON索引数组，不要任何解释。
+
+规则（严格执行）：
+1. 最多选5条最相关记忆
+2. 最后提及为今天(${today.toLocaleDateString('zh-CN')})或昨天(${yest.toLocaleDateString('zh-CN')})的必须全部包含
+3. 不足5条时，补充"重要度×提及次数"最高的前3条
+4. 若无相关记忆，只返回今天/昨天的；若也没有，返回分数前3名
+
+用户最新消息：${recentUserContent}
+
+记忆列表：
+${summaries}
+
+只返回JSON数组如：[0,2,5]`;
+
+        const resp = await fetch(moUrl+'/chat/completions', {
+            method:'POST',
+            headers:{'Content-Type':'application/json','Authorization':`Bearer ${moKey}`},
+            body: JSON.stringify({ model:moModel, max_tokens:100, messages:[{role:'user',content:prompt}] })
+        });
+        const data = await resp.json();
+        const raw = data.choices?.[0]?.message?.content?.trim()||'[]';
+        const indices = JSON.parse(raw.replace(/```json|```/g,'').trim());
+        if (!Array.isArray(indices)) throw new Error('返回格式错误');
+        return indices.filter(i=>i>=0&&i<allEvents.length).map(i=>allEvents[i]);
+    }
+    </script>
+
+    <!-- ===== 导出方式三按钮弹窗（仿系统alert样式） ===== -->
+    <div id="_export-picker" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:99999;align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:14px;width:270px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.2);">
+            <div style="padding:16px 20px 8px;text-align:center;">
+                <div style="font-size:17px;font-weight:600;color:#000;margin-bottom:4px;">导出方式</div>
+                <div style="font-size:13px;color:#666;" id="_export-picker-msg"></div>
+            </div>
+            <div style="height:1px;background:#e5e5e5;margin-top:8px;"></div>
+            <button id="_epk-file"   style="display:block;width:100%;padding:14px;background:none;border:none;border-bottom:1px solid #e5e5e5;font-size:17px;color:#007AFF;cursor:pointer;">文件导出</button>
+            <button id="_epk-copy"   style="display:block;width:100%;padding:14px;background:none;border:none;border-bottom:1px solid #e5e5e5;font-size:17px;color:#007AFF;cursor:pointer;">复制导出</button>
+            <button id="_epk-cancel" style="display:block;width:100%;padding:14px;background:none;border:none;font-size:17px;color:#FF3B30;cursor:pointer;font-weight:600;">取消</button>
+        </div>
+    </div>
+
+    <script>
+    // 三按钮导出选择，返回 'download' | 'clipboard' | 'cancel'
+    function showExportMethodPicker(msg) {
+        return new Promise(resolve => {
+            document.getElementById('_export-picker-msg').textContent = msg || '';
+            const el = document.getElementById('_export-picker');
+            el.style.display = 'flex';
+            const done = v => { el.style.display = 'none'; resolve(v); };
+            document.getElementById('_epk-file').onclick   = () => done('download');
+            document.getElementById('_epk-copy').onclick   = () => done('clipboard');
+            document.getElementById('_epk-cancel').onclick = () => done('cancel');
+        });
+    }
+    </script>
+
+    <!-- ===== 多组 API Provider 管理 ===== -->
+    <script>
+    // providers 存在 localStorage['apiProviders']，独立于角色配置
+    (function() {
+        // 在设置页 API配置区域 注入多组管理UI
+        function initApiProviders() {
+            const anchor = document.getElementById('baseurl');
+            if (!anchor) return;
+            const formGroup = anchor.closest('.form-group') || anchor.parentElement;
+            const apiSection = formGroup.parentElement;
+
+            // 找到 "API 配置" 标题
+            let h3 = null;
+            for (const el of apiSection.querySelectorAll('h3')) {
+                if (el.textContent.includes('API 配置')) { h3 = el; break; }
+            }
+            if (!h3) return;
+
+            // 插入管理面板到 h3 之后、baseurl 输入框之前
+            const panel = document.createElement('div');
+            panel.id = 'api-provider-panel';
+            panel.style.cssText = 'background:#f9f9f9;border:1px solid #e0e0e0;border-radius:8px;padding:14px;margin-bottom:16px;';
+            panel.innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                    <span style="font-size:14px;font-weight:600;color:#333;">API 服务商</span>
+                    <button onclick="_apAdd()" style="padding:5px 12px;background:#1AAD19;color:#fff;border:none;border-radius:4px;font-size:13px;cursor:pointer;">+ 添加</button>
+                </div>
+                <div id="api-provider-list"></div>
+                <div id="api-provider-form" style="display:none;margin-top:10px;background:#fff;border:1px solid #ddd;border-radius:6px;padding:12px;">
+                    <div style="font-size:13px;font-weight:600;color:#333;margin-bottom:8px;" id="ap-form-title">添加服务商</div>
+                    <input id="ap-name"    type="text"     placeholder="名称（如 OpenAI / Gemini）" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:4px;margin-bottom:8px;font-size:14px;">
+                    <input id="ap-url"     type="text"     placeholder="Base URL" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:4px;margin-bottom:8px;font-size:14px;">
+                    <input id="ap-key"     type="password" placeholder="API Key"  style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:4px;margin-bottom:10px;font-size:14px;">
+                    <div style="display:flex;gap:8px;">
+                        <button onclick="_apSave()" style="flex:1;padding:9px;background:#1AAD19;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;">保存</button>
+                        <button onclick="_apFormClose()" style="flex:1;padding:9px;background:#999;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;">取消</button>
+                    </div>
+                    <input type="hidden" id="ap-edit-id">
+                </div>
+            `;
+            h3.insertAdjacentElement('afterend', panel);
+
+            // 把原来的 baseurl/apikey 输入框变为只读展示
+            anchor.readOnly = true;
+            anchor.style.background = '#f5f5f5';
+            anchor.style.cursor = 'not-allowed';
+            anchor.placeholder = '从上方选择服务商后自动填入';
+            const keyEl = document.getElementById('apikey');
+            if (keyEl) {
+                keyEl.readOnly = true;
+                keyEl.style.background = '#f5f5f5';
+                keyEl.style.cursor = 'not-allowed';
+                keyEl.placeholder = '从上方选择服务商后自动填入';
+            }
+
+            _apRender();
+        }
+
+        // ---- 数据 ----
+        function _apLoad() {
+            try { return JSON.parse(localStorage.getItem('apiProviders') || '[]'); } catch(e) { return []; }
+        }
+        function _apSaveAll(list) { localStorage.setItem('apiProviders', JSON.stringify(list)); }
+        function _apActiveId() { return localStorage.getItem('apiActiveId') || ''; }
+        function _apSetActive(id) {
+            localStorage.setItem('apiActiveId', id);
+            const list = _apLoad();
+            const p = list.find(x => x.id === id) || list[0];
+            if (!p) return;
+            // 写入 config 和只读输入框
+            if (window.config) { config.baseurl = p.url; config.apikey = p.key; }
+            const bu = document.getElementById('baseurl'); if (bu) bu.value = p.url || '';
+            const ak = document.getElementById('apikey');  if (ak) ak.value = p.key || '';
+        }
+
+        // ---- 渲染列表 ----
+        window._apRender = function() {
+            const list = _apLoad();
+            const activeId = _apActiveId();
+            const container = document.getElementById('api-provider-list');
+            if (!container) return;
+            if (!list.length) {
+                container.innerHTML = '<div style="color:#aaa;font-size:13px;text-align:center;padding:8px 0;">暂无服务商，点击添加</div>';
+                return;
+            }
+            container.innerHTML = list.map(p => {
+                const active = p.id === activeId;
+                return `<div onclick="_apSelect('${p.id}')" style="display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:6px;border:1.5px solid ${active ? '#1AAD19' : '#ddd'};background:${active ? '#f0fff0' : '#fff'};margin-bottom:6px;cursor:pointer;">
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:14px;font-weight:600;color:${active ? '#1AAD19' : '#333'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${active ? '✅ ' : ''}${_esc(p.name||'未命名')}</div>
+                        <div style="font-size:11px;color:#999;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_esc(p.url||'')}</div>
+                    </div>
+                    <button onclick="event.stopPropagation();_apEdit('${p.id}')" style="padding:3px 8px;font-size:12px;background:#eee;border:none;border-radius:4px;cursor:pointer;">编辑</button>
+                    <button onclick="event.stopPropagation();_apDel('${p.id}')"  style="padding:3px 8px;font-size:12px;background:#fee;border:none;border-radius:4px;cursor:pointer;color:#d32f2f;">删除</button>
+                </div>`;
+            }).join('');
+        };
+
+        function _esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+        window._apSelect = function(id) { _apSetActive(id); _apRender(); showToast('✅ 已切换服务商'); };
+
+        window._apAdd = function() {
+            document.getElementById('ap-form-title').textContent = '添加服务商';
+            document.getElementById('ap-edit-id').value = '';
+            document.getElementById('ap-name').value = '';
+            document.getElementById('ap-url').value = '';
+            document.getElementById('ap-key').value = '';
+            document.getElementById('api-provider-form').style.display = 'block';
+        };
+
+        window._apEdit = function(id) {
+            const p = _apLoad().find(x => x.id === id); if (!p) return;
+            document.getElementById('ap-form-title').textContent = '编辑服务商';
+            document.getElementById('ap-edit-id').value = id;
+            document.getElementById('ap-name').value = p.name || '';
+            document.getElementById('ap-url').value  = p.url  || '';
+            document.getElementById('ap-key').value  = p.key  || '';
+            document.getElementById('api-provider-form').style.display = 'block';
+        };
+
+        window._apSave = function() {
+            const name = document.getElementById('ap-name').value.trim() || '未命名';
+            const url  = document.getElementById('ap-url').value.trim();
+            const key  = document.getElementById('ap-key').value.trim();
+            const editId = document.getElementById('ap-edit-id').value;
+            if (!url) { showToast('请填写 Base URL'); return; }
+            const list = _apLoad();
+            if (editId) {
+                const idx = list.findIndex(x => x.id === editId);
+                if (idx >= 0) list[idx] = { id: editId, name, url, key };
+            } else {
+                const id = 'p' + Date.now();
+                list.push({ id, name, url, key });
+                if (!_apActiveId()) _apSetActive(id);
+            }
+            _apSaveAll(list);
+            _apSetActive(_apActiveId() || list[0].id);
+            _apRender();
+            _apFormClose();
+            showToast('✅ 已保存');
+        };
+
+        window._apFormClose = function() { document.getElementById('api-provider-form').style.display = 'none'; };
+
+        window._apDel = function(id) {
+            const list = _apLoad();
+            if (list.length <= 1) { showToast('至少保留一个服务商'); return; }
+            if (!confirm('确定删除这个服务商？')) return;
+            const newList = list.filter(x => x.id !== id);
+            _apSaveAll(newList);
+            if (_apActiveId() === id) _apSetActive(newList[0].id);
+            _apRender();
+        };
+
+        // 迁移旧数据
+        function _apMigrate() {
+            if (_apLoad().length) return;
+            const saved = localStorage.getItem('aiChatConfig');
+            if (!saved) return;
+            try {
+                const c = JSON.parse(saved);
+                if (c.baseurl || c.apikey) {
+                    const id = 'p' + Date.now();
+                    _apSaveAll([{ id, name: '默认服务商', url: c.baseurl || '', key: c.apikey || '' }]);
+                    _apSetActive(id);
+                }
+            } catch(e) {}
+        }
+
+        // 等 DOM 就绪后执行
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => { _apMigrate(); initApiProviders(); _apSetActive(_apActiveId()); });
+        } else {
+            _apMigrate(); initApiProviders(); _apSetActive(_apActiveId());
+        }
+
+        // 每次打开设置页也刷新列表
+        const _origOpenSettings = window.openSettings;
+        window.openSettings = function() {
+            if (_origOpenSettings) _origOpenSettings.apply(this, arguments);
+            setTimeout(() => { _apRender(); _apSetActive(_apActiveId()); }, 0);
+        };
+    })();
     </script>
 
 </body>
