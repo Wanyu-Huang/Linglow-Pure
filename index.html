@@ -2660,7 +2660,7 @@
                     </div>
                     
                     <div style="margin-top: 8px; padding: 8px 12px; background: #e3f2fd; border-radius: 6px; font-size: 12px; color: #1565C0;">
-                        <strong>提示：</strong>点击"查看/编辑记忆"可以预填写基本信息（姓名、年龄、职业等），让AI更好地了解你
+                        <strong>提示：</strong>点击"查看/编辑记忆"可以预填写兴趣爱好（足球、草莓蛋糕等），让AI更好地了解你
                     </div>
                     
                     <div id="memory-status" style="margin-top: 10px; padding: 10px; background-color: #f0f0f0; border-radius: 4px; font-size: 0.9em;">
@@ -2765,7 +2765,7 @@
                         长期记忆管理
                     </div>
                     <div style="font-size: 13px; color: #666; margin-bottom: 12px; line-height: 1.5;">
-                        导出或导入长期记忆（基本信息、情感倾向、重要事件），支持智能合并或直接覆盖。
+                        导出或导入长期记忆（兴趣爱好、性格偏好、重要事件），支持智能合并或直接覆盖。
                     </div>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button onclick="exportMemory()" style="padding: 8px 16px; background-color: #9C27B0; color: white; border: none; border-radius: 4px; cursor: pointer;">
@@ -2906,8 +2906,12 @@
                     <div id="basic-info-editor"></div>
                 </div>
                 <div class="memory-section">
-                    <h4>情感倾向</h4>
-                    <textarea id="emotional-profile-editor" rows="4" placeholder="用户的性格特点、兴趣爱好..."></textarea>
+                    <h4>性格偏好</h4>
+                    <textarea id="emotional-profile-editor" rows="4" placeholder="AI观察到的用户性格特点..."></textarea>
+                </div>
+                <div class="memory-section">
+                    <h4>人际关系</h4>
+                    <textarea id="relationships-editor" rows="3" placeholder="例如：有一个弟弟、和父母关系亲近..."></textarea>
                 </div>
                 <div class="memory-section">
                     <h4>重要事件</h4>
@@ -3112,7 +3116,7 @@
                 <div style="background: #e3f2fd; padding: 12px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #2196F3;">
                     <p style="margin: 0 0 8px 0; font-weight: 500; color: #1565C0;">📋 导入文件信息：</p>
                     <p style="margin: 0; font-size: 13px; color: #424242;">
-                        • 基本信息：<span id="import-basic-info-count">0</span> 条<br>
+                        • 兴趣爱好：<span id="import-basic-info-count">0</span> 条<br>
                         • 重要事件：<span id="import-events-count">0</span> 条<br>
                         • 最后更新：<span id="import-last-updated">未知</span>
                     </p>
@@ -5947,18 +5951,18 @@
                 if (longTermMemory && longTermMemory.metadata) {
                     let memoryPrompt = '\n\n=== 长期记忆 ===\n\n';
                     
-                    // 添加基本信息
+                    // 添加兴趣爱好
                     if (longTermMemory.basic_info && Object.keys(longTermMemory.basic_info).length > 0) {
-                        memoryPrompt += '以下是用户的基本信息，你作为用户的爱人应该深深牢记，并且贴近用户的喜好，照顾用户所有需求：\n';
+                        memoryPrompt += '以下是用户的兴趣爱好，你应该记住这些：\n';
                         for (const [key, value] of Object.entries(longTermMemory.basic_info)) {
                             memoryPrompt += `${key}: ${value}\n`;
                         }
                         memoryPrompt += '\n';
                     }
                     
-                    // 添加情感倾向
+                    // 添加性格偏好
                     if (longTermMemory.emotional_profile) {
-                        memoryPrompt += `性格: ${longTermMemory.emotional_profile}\n\n`;
+                        memoryPrompt += `性格偏好: ${longTermMemory.emotional_profile}\n\n`;
                     }
                     
                     // 添加人际关系
@@ -5983,8 +5987,8 @@
                             }
                             memoryPrompt += `）\n`;
                             memoryPrompt += `${m.content}\n`;
-                            if (m.assistant_attitude) {
-                                memoryPrompt += `你的态度: ${m.assistant_attitude}\n`;
+                            if (m.心路历程) {
+                                memoryPrompt += `心路历程: ${m.心路历程}\n`;
                             }
                             memoryPrompt += '\n';
                         });
@@ -6537,16 +6541,19 @@
                 ).join('\n\n');
                 
                 // 构建总结prompt
-                const summaryPrompt = `你的任务：从对话中提取或更新长期记忆。
+                const summaryPrompt = `【角色设定】
+${config.systemPrompt || '你是一个友好的AI助手。'}
+
+你正在整理你和用户的聊天记忆。以第一人称（"我"）的视角，记录你眼中发生的事情和你的感受。
 
 【对话时间范围】
 ${timeRange}
 气泡数量：${bubblesToSummarize.length}个
 
-【当前已有的基本信息】
+【当前已有的基本信息（兴趣爱好）】
 ${Object.keys(longTermMemory.basic_info).length > 0 ? JSON.stringify(longTermMemory.basic_info, null, 2) : '无'}
 
-【当前已有的情感倾向】
+【当前已有的性格偏好】
 ${longTermMemory.emotional_profile || '无'}
 
 【当前已有的重要事件】
@@ -6558,13 +6565,18 @@ ${conversationText}
 【任务要求】
 每次生成必须完成三个判断：
 
-1. 基本信息更新判断
-   - 是否有新的基本信息（姓名、年龄、职业、居住地、外貌特征、兴趣爱好等）？
-   - 如果有，输出需要更新的字段；如果无，输出null
+1. 基本信息更新判断（兴趣爱好）
+   - 是否发现用户新的兴趣爱好？
+   - 格式：名词或动词短语
+   - 例如："足球"、"踢足球"、"草莓蛋糕"、"吃草莓蛋糕"、"郁金香"、"养猫"
+   - 如果有，输出需要添加的兴趣；如果无，输出null
 
-2. 情感倾向更新判断
-   - 是否需要更新用户的性格特点、情感倾向描述？
-   - 如果需要，输出完整的新描述（100-300字）；如果不需要，输出null
+2. 性格偏好更新判断（延伸追加，不覆盖）
+   - 是否发现用户新的性格特点、行为模式、价值观？
+   - 以第一人称视角描述："我注意到TA..."
+   - 保持客观、温和的观察态度，不评判
+   - 如果有新发现，输出要追加的内容（50-100字）；如果无，输出null
+   - 注意：是追加到已有内容后面，不是覆盖
 
 3. 重要事件处理（只生成0或1条）
    - 优先判断：是否在延续/更新已有记忆？
@@ -6586,11 +6598,11 @@ ${conversationText}
 【输出格式】（纯JSON，无markdown代码块）
 {
   "basic_info_updates": {
-    "职业": "程序员",
-    "居住地": "北京"
+    "足球": "喜欢看足球比赛",
+    "草莓蛋糕": "最爱的甜品"
   } 或 null,
   
-  "emotional_profile_update": "完整的情感倾向描述" 或 null,
+  "emotional_profile_update": "我注意到TA遇到困难时喜欢先自己思考再求助。" 或 null,
   
   "memory_action": {
     "action": "update" 或 "create" 或 "skip",
@@ -6598,14 +6610,14 @@ ${conversationText}
     // 如果 action 是 "update"
     "memory_id": "mem_003",
     "new_content": "具体新增内容（带日期）",
-    "assistant_attitude": "当前态度" 或 "旧态度(日期) → 新态度(日期)",
+    "心路历程": "我的感受变化（带日期）",
     "new_importance": 数字,
     
     // 如果 action 是 "create"  
     "title": "3-6字主题",
     "type": "personal" 或 "relationship",
     "content": "完整内容（带日期）",
-    "assistant_attitude": "我的态度",
+    "心路历程": "我的感受和态度",
     "importance": 数字,
     
     // 如果 action 是 "skip"
@@ -6650,13 +6662,18 @@ ${conversationText}
 - 口头承诺（总说要减肥/戒烟但没执行）
 - 情绪发泄（每天抱怨同样的事）
 
-【assistant_attitude规范】
-- 记录你（AI）对这个记忆的情感态度
-- 如果本次是第一次提及：直接写态度（如"关心"）
-- 如果是更新已有记忆且态度有变化：用"→"连接并标注日期
-  格式：旧态度(MM/DD) → 新态度(MM/DD)
-  例如：关心(12/10) → 担心(12/22) → 放心(12/28)
-- 常见态度词：关心、担心、开心、难过、生气、理解、共情、鼓励、安慰、支持、骄傲、遗憾
+【心路历程规范】
+- 以第一人称（"我"）记录你的感受
+- 保持温和、客观、不评判的态度
+- 如果本次是第一次提及：直接写感受（如"我为TA感到高兴"）
+- 如果是更新已有记忆且感受有变化：用"→"连接并标注日期
+  格式：旧感受(MM/DD) → 新感受(MM/DD)
+  例如：我有些担心(12/10) → 我感到欣慰(12/22) → 我很为TA骄傲(12/28)
+- 避免审判性语言：
+  ✅ "我注意到TA最近情绪低落"
+  ❌ "TA总是抱怨"
+  ✅ "我感觉TA对工作有些倦怠"
+  ❌ "TA不思进取"
 
 【title命名规范】
 - 3-6个汉字
@@ -6664,33 +6681,35 @@ ${conversationText}
 - 例如：工作-升职、健康-胃病、感情-吵架、生活-搬家
 - 避免太宽泛（如"工作"）或太具体（如"2025年12月10日腹痛"）
 
-【内容格式规范】
+【content内容格式规范】
+- 以第一人称视角记录："TA告诉我..."、"我了解到..."
 - 每句话后标注日期：(MM/DD) 或 (YYYY/MM/DD)
-- 简洁表达，不超过200字
-- 例如：腹痛比较严重（12/10）。去医院做了检查（12/22）。确诊为慢性胃炎（12/28）。
+- 简洁表达，不超过150字
+- 保持客观、温和的叙述语气
+- 例如：TA告诉我腹部不适（12/10）。我建议TA去医院检查（12/15）。TA做了检查，确诊为慢性胃炎（12/22）。
 
 【输出格式】（纯JSON，不要markdown代码块标记）
 {
   "basic_info_updates": {
-    "职业": "程序员"
+    "足球": "喜欢踢足球"
   } 或 null,
   
-  "emotional_profile_update": "完整的情感倾向描述" 或 null,
+  "emotional_profile_update": "我发现TA..." 或 null,
   
   "memory_action": {
     "action": "update" 或 "create" 或 "skip",
     
     // 如果 action 是 "update"
     "memory_id": "mem_003",
-    "new_content": "具体新增内容（带日期）",
-    "assistant_attitude": "当前态度" 或 "旧态度(日期) → 新态度(日期)",
+    "new_content": "新增内容（带日期）",
+    "心路历程": "我的感受（带日期）",
     "new_importance": 数字,
     
     // 如果 action 是 "create"  
     "title": "3-6字主题",
     "type": "personal" 或 "relationship",
     "content": "完整内容（带日期）",
-    "assistant_attitude": "我的态度",
+    "心路历程": "我的感受",
     "importance": 数字,
     
     // 如果 action 是 "skip"
@@ -6708,7 +6727,7 @@ ${conversationText}
                     body: JSON.stringify({
                         model: config.modelname,
                         messages: [
-                            { role: 'system', content: '你是一个专业的记忆整理助手，擅长提取和总结对话中的关键信息。请严格按照要求输出纯JSON格式。' },
+                            { role: 'system', content: `${config.systemPrompt || '你是一个友好的AI助手。'}\n\n现在你需要整理你和用户的聊天记忆。请以角色的第一人称视角，客观、温和地记录发生的事情和你的感受。严格按照要求输出纯JSON格式。` },
                             { role: 'user', content: summaryPrompt }
                         ],
                         temperature: 0.3
@@ -6728,18 +6747,22 @@ ${conversationText}
                     
                     console.log('🧠 AI返回结果:', result);
                     
-                    // 1. 处理基本信息更新
+                    // 1. 处理兴趣爱好更新
                     if (result.basic_info_updates) {
                         for (const [key, value] of Object.entries(result.basic_info_updates)) {
                             longTermMemory.basic_info[key] = value;
                         }
-                        console.log('📝 更新基本信息:', result.basic_info_updates);
+                        console.log('📝 更新兴趣爱好:', result.basic_info_updates);
                     }
                     
-                    // 2. 处理情感倾向更新
+                    // 2. 处理性格偏好更新（追加，不覆盖）
                     if (result.emotional_profile_update) {
-                        longTermMemory.emotional_profile = result.emotional_profile_update;
-                        console.log('💭 更新情感倾向');
+                        if (longTermMemory.emotional_profile) {
+                            longTermMemory.emotional_profile += ' ' + result.emotional_profile_update;
+                        } else {
+                            longTermMemory.emotional_profile = result.emotional_profile_update;
+                        }
+                        console.log('💭 追加性格偏好');
                     }
                     
                     // 3. 处理重要事件
@@ -6752,7 +6775,7 @@ ${conversationText}
                             memory.content += " " + memoryAction.new_content;
                             memory.last_mentioned = lastTimestamp;
                             memory.mention_count++;
-                            memory.assistant_attitude = memoryAction.assistant_attitude;
+                            memory.心路历程 = memoryAction.心路历程;
                             memory.importance = memoryAction.new_importance;
                             console.log('🔄 更新记忆:', memoryAction.memory_id, memory.title);
                         } else {
@@ -6769,7 +6792,7 @@ ${conversationText}
                             last_mentioned: lastTimestamp,
                             mention_count: 1,
                             content: memoryAction.content,
-                            assistant_attitude: memoryAction.assistant_attitude,
+                            心路历程: memoryAction.心路历程,
                             importance: memoryAction.importance
                         };
                         
@@ -6903,7 +6926,7 @@ ${conversationText}
             const appearance = document.getElementById('memory-appearance').value.trim();
             const interests = document.getElementById('memory-interests').value.trim();
             
-            // 更新长期记忆的基本信息
+            // 更新长期记忆的基本信息（只在有值时更新，不删除已有字段）
             if (name) longTermMemory.basic_info.姓名 = name;
             if (age) longTermMemory.basic_info.年龄 = age;
             if (occupation) longTermMemory.basic_info.职业 = occupation;
@@ -6939,7 +6962,7 @@ ${conversationText}
                 { key: '居住地', placeholder: '例如：北京' },
                 { key: '性别', placeholder: '例如：男/女' },
                 { key: '外貌特征', placeholder: '例如：高个子、短发' },
-                { key: '兴趣爱好', placeholder: '例如：编程、游戏' }
+                { key: '兴趣爱好', placeholder: '例如：足球、草莓蛋糕' }
             ];
             
             basicInfoEditor.innerHTML = basicInfoFields.map(field => {
@@ -6952,8 +6975,11 @@ ${conversationText}
                 `;
             }).join('');
             
-            // 填充情感倾向
+            // 填充性格偏好
             document.getElementById('emotional-profile-editor').value = longTermMemory.emotional_profile || '';
+            
+            // 填充人际关系
+            document.getElementById('relationships-editor').value = longTermMemory.relationships || '';
             
             // 填充重要事件
             renderEventsEditor();
@@ -7025,8 +7051,8 @@ ${conversationText}
                         <textarea rows="3" placeholder="记忆内容（带日期标注）" onchange="updateEventContent(${index}, this.value)" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; box-sizing: border-box;">${event.content || ''}</textarea>
                     </div>
                     <div style="margin-top: 8px;">
-                        <label style="font-size: 12px; color: #666; display: block; margin-bottom: 4px;">AI态度：</label>
-                        <input type="text" value="${event.assistant_attitude || ''}" onchange="updateEventAttitude(${index}, this.value)" placeholder="例如：关心、担心" style="width: 100%; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; box-sizing: border-box;">
+                        <label style="font-size: 12px; color: #666; display: block; margin-bottom: 4px;">心路历程：</label>
+                        <input type="text" value="${event.心路历程 || ''}" onchange="updateEventAttitude(${index}, this.value)" placeholder="例如：我为TA感到高兴" style="width: 100%; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; box-sizing: border-box;">
                     </div>
                 </div>
             `;
@@ -7070,11 +7096,11 @@ ${conversationText}
         }
         
         /**
-         * 更新事件AI态度
+         * 更新事件心路历程
          */
         function updateEventAttitude(index, attitude) {
             if (longTermMemory.important_events[index]) {
-                longTermMemory.important_events[index].assistant_attitude = attitude;
+                longTermMemory.important_events[index].心路历程 = attitude;
             }
         }
         
@@ -7101,7 +7127,7 @@ ${conversationText}
                 last_mentioned: now,
                 mention_count: 1,
                 content: '',
-                assistant_attitude: '',
+                心路历程: '',
                 importance: 5
             };
             
@@ -7118,20 +7144,22 @@ ${conversationText}
          * 保存记忆编辑
          */
         function saveMemoryEdit() {
-            // 保存基本信息
+            // 保存基本信息（只追加/更新，空值不删除已有字段）
             const basicInfoInputs = document.querySelectorAll('#basic-info-editor input');
             basicInfoInputs.forEach(input => {
                 const key = input.getAttribute('data-key');
                 const value = input.value.trim();
                 if (value) {
                     longTermMemory.basic_info[key] = value;
-                } else {
-                    delete longTermMemory.basic_info[key];
                 }
+                // 空值不操作，保留已有内容
             });
             
-            // 保存情感倾向
+            // 保存性格偏好（textarea展示的是完整内容，用户可直接编辑全文）
             longTermMemory.emotional_profile = document.getElementById('emotional-profile-editor').value.trim();
+            
+            // 保存人际关系（textarea展示的是完整内容，用户可直接编辑全文）
+            longTermMemory.relationships = document.getElementById('relationships-editor').value.trim();
             
             // 更新元数据
             longTermMemory.metadata.last_updated = new Date().toISOString();
@@ -7695,8 +7723,8 @@ ${JSON.stringify(longTermMemory, null, 2)}
 ${JSON.stringify(importedMemoryData, null, 2)}
 
 要求：
-1. basic_info: 合并基本信息，优先保留更完整的信息
-2. emotional_profile: 合并两份情感倾向描述，形成更全面的总结（100-300字）
+1. basic_info: 合并兴趣爱好，优先保留更完整的信息
+2. emotional_profile: 合并两份性格偏好描述，形成更全面的总结（100-300字）
 3. important_events: 合并重要事件列表，去除重复，按重要度排序，保留最重要的${localStorage.getItem('maxImportantEvents') || 10}条
 
 输出格式（纯JSON，不要markdown代码块）：
@@ -8706,18 +8734,18 @@ ${JSON.stringify(importedMemoryData, null, 2)}
                 
                 let memoryPrompt = '\n\n=== 长期记忆 ===\n\n';
                 
-                // 添加基本信息
+                // 添加兴趣爱好
                 if (longTermMemory.basic_info && Object.keys(longTermMemory.basic_info).length > 0) {
-                    memoryPrompt += '以下是用户的基本信息，你作为用户的爱人应该深深牢记，并且贴近用户的喜好，照顾用户所有需求：\n';
+                    memoryPrompt += '以下是用户的兴趣爱好，你应该记住这些：\n';
                     for (const [key, value] of Object.entries(longTermMemory.basic_info)) {
                         memoryPrompt += `${key}: ${value}\n`;
                     }
                     memoryPrompt += '\n';
                 }
                 
-                // 添加情感倾向
+                // 添加性格偏好
                 if (longTermMemory.emotional_profile) {
-                    memoryPrompt += `性格: ${longTermMemory.emotional_profile}\n\n`;
+                    memoryPrompt += `性格偏好: ${longTermMemory.emotional_profile}\n\n`;
                 }
                 
                 // 添加人际关系
@@ -8741,8 +8769,8 @@ ${JSON.stringify(importedMemoryData, null, 2)}
                         }
                         memoryPrompt += `）\n`;
                         memoryPrompt += `${m.content}\n`;
-                        if (m.assistant_attitude) {
-                            memoryPrompt += `你的态度: ${m.assistant_attitude}\n`;
+                        if (m.心路历程) {
+                            memoryPrompt += `心路历程: ${m.心路历程}\n`;
                         }
                         memoryPrompt += '\n';
                     });
