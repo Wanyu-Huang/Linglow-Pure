@@ -5616,7 +5616,8 @@
             
             // 绑定点击事件
             bubbleMenu.querySelectorAll('.bubble-menu-item').forEach((item, index) => {
-                item.onclick = () => {
+                item.onclick = (e) => {
+                    e.stopPropagation();
                     menuItems[index].action();
                     closeBubbleMenu(bubbleElement);
                 };
@@ -5677,7 +5678,10 @@
             const menuOverlay = document.getElementById('menu-overlay');
             const bubbleMenu = document.getElementById('bubble-menu');
             
-            if (menuOverlay) menuOverlay.classList.remove('active');
+            if (menuOverlay) {
+                menuOverlay.classList.remove('active');
+                menuOverlay.onclick = null; // 清除旧的点击处理器，防止事件穿透
+            }
             if (bubbleMenu) bubbleMenu.classList.remove('active');
             if (bubbleElement) bubbleElement.classList.remove('menu-active');
         }
@@ -5919,8 +5923,11 @@
             overlay.classList.add('active');
             dialog.classList.add('active');
             
-            // 点击遮罩关闭
-            overlay.onclick = hideConfirmDialog;
+            // 点击遮罩关闭（延迟绑定，避免移动端触摸事件立即触发）
+            overlay.onclick = null;
+            setTimeout(() => {
+                overlay.onclick = hideConfirmDialog;
+            }, 300);
         }
         
         /**
@@ -5931,7 +5938,10 @@
             const overlay = document.getElementById('menu-overlay');
             
             if (dialog) dialog.classList.remove('active');
-            if (overlay) overlay.classList.remove('active');
+            if (overlay) {
+                overlay.classList.remove('active');
+                overlay.onclick = null; // 清除点击处理器
+            }
         }
         
         /**
@@ -5939,11 +5949,21 @@
          */
         async function callAPIForRegeneration() {
             showTypingIndicator();
+            isWaitingForAI = true;
             
             try {
                 const N = parseInt(localStorage.getItem('contextWindowSize')) || 50;
                 const recentBubbles = chatHistory.slice(-N);
                 const apiMessages = convertToAPIFormat(recentBubbles);
+                
+                // 验证：确保最后一条消息是user（否则API会报错）
+                if (apiMessages.length === 0 || apiMessages[apiMessages.length - 1].role !== 'user') {
+                    hideTypingIndicator();
+                    isWaitingForAI = false;
+                    console.error('❌ 重新生成失败：没有找到上一条用户消息');
+                    alert('重新生成失败：找不到用户消息，请检查聊天记录');
+                    return;
+                }
                 
                 let finalSystemPrompt = (window._offlinePrefix ? window._offlinePrefix() : '') + config.systemPrompt;
                 
@@ -6034,11 +6054,17 @@
                 if (data.choices && data.choices[0]) {
                     const aiResponseText = data.choices[0].message.content.trim();
                     processAndDisplaySegments(aiResponseText);
+                } else {
+                    isWaitingForAI = false;
+                    const errMsg = data.error?.message || '未知错误';
+                    console.error('❌ 重新生成API返回异常:', data);
+                    alert('重新生成失败：' + errMsg);
                 }
             } catch (error) {
                 hideTypingIndicator();
+                isWaitingForAI = false;
                 console.error('重新生成失败:', error);
-                alert('重新生成失败');
+                alert('重新生成失败：' + error.message);
             }
         }
         
@@ -10952,11 +10978,14 @@ ${JSON.stringify(importedMemoryData, null, 2)}
         const moId = localStorage.getItem('moActiveId') || '';
         let list = [];
         try { list = JSON.parse(localStorage.getItem('apiProviders') || '[]'); } catch(e) {}
-        const p = list.find(x => x.id === moId) || list[0];
-        const moUrl = (p?.url || window.config?.baseurl || '').replace(/\/$/, '');
-        const moKey = p?.key || window.config?.apikey || '';
-        const moModel = localStorage.getItem('moModelname') || window.config?.modelname||'';
-        if (!moUrl||!moKey||!moModel) throw new Error('记忆优化未完整配置');
+        const p = moId ? list.find(x => x.id === moId) : null;
+        const moUrl = (p?.url || '').replace(/\/$/, '');
+        const moKey = p?.key || '';
+        const moModel = localStorage.getItem('moModelname') || '';
+        if (!moUrl || !moKey || !moModel) {
+            // 记忆优化小模型未配置，静默回退到全量记忆
+            throw new Error('记忆优化小模型未配置：请在设置中选择服务商并指定模型名称');
+        }
 
         const today = new Date(); today.setHours(0,0,0,0);
         const yest  = new Date(today); yest.setDate(today.getDate()-1);
