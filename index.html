@@ -2444,14 +2444,24 @@
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">
                 <!-- 转账 -->
                 <div onclick="openTransferFromChat()" style="display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;">
-                    <div style="width:56px;height:56px;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,0.1);">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#07c160" stroke-width="2" stroke-linecap="round">
-                            <rect x="2" y="5" width="20" height="14" rx="2"/>
-                            <path d="M2 10h20"/>
-                            <path d="M16 14h2"/>
+                    <div style="width:56px;height:56px;background:linear-gradient(135deg,#f5a11c,#f0920a);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                        <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+                            <circle cx="15" cy="15" r="12" stroke="white" stroke-width="2"/>
+                            <path d="M24 11H4M24 11l-5-5M24 11l-5 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M6 19H26M6 19l5-5M6 19l5 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </div>
                     <span style="font-size:12px;color:#333;">转账</span>
+                </div>
+                <!-- 收款 -->
+                <div onclick="openCollectFromChat()" style="display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;">
+                    <div style="width:56px;height:56px;background:linear-gradient(135deg,#07c160,#06ad56);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2v20M2 12h20"/>
+                            <path d="M17 7l-5 5-5-5"/>
+                        </svg>
+                    </div>
+                    <span style="font-size:12px;color:#333;">收款</span>
                 </div>
                 <!-- 红包（占位） -->
                 <div style="display:flex;flex-direction:column;align-items:center;gap:8px;opacity:0.4;">
@@ -2474,15 +2484,94 @@
                     </div>
                     <span style="font-size:12px;color:#333;">图片</span>
                 </div>
-                <!-- 位置（占位） -->
-                <div style="display:flex;flex-direction:column;align-items:center;gap:8px;opacity:0.4;">
-                    <div style="width:56px;height:56px;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,0.1);">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ff9800" stroke-width="2" stroke-linecap="round">
-                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                            <circle cx="12" cy="10" r="3"/>
-                        </svg>
+            </div>
+        </div>
+
+        <!-- ===== 转账详情页（点击气泡后进入，可收款或退回）===== -->
+        <div id="transfer-detail-page" class="page">
+            <header class="header">
+                <button onclick="showPage('chat-page')">
+                    <svg width="10" height="18" viewBox="0 0 10 18" fill="none">
+                        <path d="M9 1L1 9L9 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <span class="header-title">转账详情</span>
+                <span></span>
+            </header>
+            <div class="content" style="background:#EDEDED;overflow-y:auto;">
+                <!-- 橙色大卡片 -->
+                <div style="background:linear-gradient(180deg,#f5a11c,#f0920a);padding:36px 24px 32px;">
+                    <div style="display:flex;align-items:center;gap:16px;">
+                        <div id="td-avatar" style="width:54px;height:54px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:24px;overflow:hidden;"></div>
+                        <div>
+                            <div id="td-label" style="font-size:15px;color:rgba(255,255,255,0.9);margin-bottom:6px;"></div>
+                            <div id="td-amount" style="font-size:38px;font-weight:700;color:#fff;letter-spacing:1px;line-height:1;">¥ 0.00</div>
+                        </div>
                     </div>
-                    <span style="font-size:12px;color:#333;">位置</span>
+                    <div id="td-note" style="margin-top:18px;font-size:13px;color:rgba(255,255,255,0.85);display:none;">
+                        <span style="opacity:0.7;">备注：</span><span id="td-note-text"></span>
+                    </div>
+                </div>
+                <!-- 详情行 -->
+                <div style="background:#fff;margin-top:10px;">
+                    <div style="padding:15px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f0f0f0;">
+                        <span style="color:#999;font-size:14px;">转账方</span>
+                        <span id="td-from" style="color:#333;font-size:14px;"></span>
+                    </div>
+                    <div style="padding:15px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f0f0f0;">
+                        <span style="color:#999;font-size:14px;">状态</span>
+                        <span id="td-status" style="font-size:14px;"></span>
+                    </div>
+                    <div style="padding:15px 20px;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="color:#999;font-size:14px;">转账时间</span>
+                        <span id="td-time" style="color:#333;font-size:14px;"></span>
+                    </div>
+                </div>
+                <!-- 收款按钮区（仅对方转给我时显示） -->
+                <div id="td-accept-area" style="display:none;padding:30px 20px 16px;">
+                    <button onclick="doTransferAccept()" style="width:100%;padding:15px;background:#f5a11c;border:none;border-radius:6px;font-size:18px;font-weight:600;color:#fff;cursor:pointer;letter-spacing:1px;">收款</button>
+                    <div style="text-align:center;margin-top:16px;">
+                        <span onclick="doTransferRefund()" style="font-size:13px;color:#999;cursor:pointer;text-decoration:underline;text-underline-offset:3px;">退回</span>
+                    </div>
+                </div>
+                <!-- 我发出的，只读，无操作 -->
+                <div id="td-readonly-area" style="display:none;padding:24px 20px;text-align:center;color:#bbb;font-size:13px;">
+                    等待对方操作
+                </div>
+                <div style="text-align:center;padding:16px 0 30px;font-size:12px;color:#ccc;">微信转账</div>
+            </div>
+        </div>
+
+        <!-- ===== 收款页面（角色向用户要钱）===== -->
+        <div id="collect-page" class="page">
+            <header class="header">
+                <button onclick="showPage(window._collectOriginPage||'chat-page')">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                </button>
+                <span class="header-title">收款</span>
+                <span></span>
+            </header>
+            <div class="content" style="background:#EDEDED;overflow-y:auto;">
+                <div style="background:#fff;margin-bottom:10px;padding:24px 20px;">
+                    <div style="display:flex;align-items:center;gap:14px;margin-bottom:28px;">
+                        <div id="collect-avatar" style="width:52px;height:52px;border-radius:6px;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;flex-shrink:0;overflow:hidden;"></div>
+                        <div>
+                            <div id="collect-name" style="font-size:17px;font-weight:500;color:#333;margin-bottom:2px;">角色昵称</div>
+                            <div style="font-size:13px;color:#999;">向对方收款</div>
+                        </div>
+                    </div>
+                    <div style="border-bottom:2px solid #07c160;padding-bottom:12px;margin-bottom:16px;">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span style="font-size:28px;color:#333;font-weight:400;">¥</span>
+                            <input id="collect-amount-input" type="number" min="0" step="0.01" placeholder="0.00"
+                                style="flex:1;border:none;outline:none;font-size:36px;font-weight:500;color:#333;background:transparent;width:0;">
+                        </div>
+                    </div>
+                    <input id="collect-note-input" type="text" placeholder="添加备注（选填）" maxlength="30"
+                        style="width:100%;box-sizing:border-box;padding:10px 0;border:none;border-bottom:1px solid #EDEDED;outline:none;font-size:15px;color:#333;background:transparent;margin-bottom:8px;">
+                </div>
+                <div style="padding:0 20px;">
+                    <button onclick="confirmCollectFromChar()" style="width:100%;padding:14px;background:#07c160;color:#fff;border:none;border-radius:6px;font-size:17px;font-weight:500;cursor:pointer;">发起收款</button>
                 </div>
             </div>
         </div>
@@ -8384,17 +8473,34 @@ ${JSON.stringify(importedMemoryData, null, 2)}
             
             // 添加主要文本(不包含引用)
             // 检测转账气泡（持久化重新渲染）
-            const transferOutMatch = mainText.match(/^\[转账给(.+?)\] ¥([\d.]+)(?:\s·\s(.+))?$/);
             const transferInMatch  = mainText.match(/^\[转账给你\] ¥([\d.]+)$/);
+            const transferOutMatch = mainText.match(/^\[转账给(?!你)(.+?)\] ¥([\d.]+)(?:\s·\s(.+))?$/);
+            const collectMatch     = mainText.match(/^\[收款请求\] ¥([\d.]+)(?:\s·\s(.+))?$/);
+            const refundMatch      = mainText.match(/^\[退回\] ¥([\d.]+) 来自(.+)$/);
+            const collectSuccessMatch = mainText.match(/^\[收款成功\] ¥([\d.]+)$/);
             if (transferOutMatch || transferInMatch) {
-                bubbleDiv.style.cssText = 'background:transparent;padding:0;box-shadow:none;';
+                bubbleDiv.style.cssText = 'background:transparent;padding:0;box-shadow:none;border-radius:0;cursor:pointer;';
                 if (transferOutMatch) {
                     const [, toName, amount, note] = transferOutMatch;
                     bubbleDiv.innerHTML = renderTransferBubble('out', amount, toName, note || '');
+                    bubbleDiv.onclick = () => openTransferDetail('out', amount, note||'', toName, bubbleId, fullTimestamp);
                 } else {
                     const [, amount] = transferInMatch;
                     bubbleDiv.innerHTML = renderTransferBubble('in', amount, config.aiNickname || '对方', '');
+                    bubbleDiv.onclick = () => openTransferDetail('in', amount, '', config.aiNickname||'对方', bubbleId, fullTimestamp);
                 }
+            } else if (collectMatch) {
+                bubbleDiv.style.cssText = 'background:transparent;padding:0;box-shadow:none;border-radius:0;';
+                const [, amount, note] = collectMatch;
+                bubbleDiv.innerHTML = renderCollectBubble(amount, note || '');
+            } else if (refundMatch) {
+                bubbleDiv.style.cssText = 'background:transparent;padding:0;box-shadow:none;border-radius:0;';
+                const [, amount, fromName] = refundMatch;
+                bubbleDiv.innerHTML = renderRefundBubble(amount, fromName);
+            } else if (collectSuccessMatch) {
+                bubbleDiv.style.cssText = 'background:transparent;padding:0;box-shadow:none;border-radius:0;';
+                const [, amount] = collectSuccessMatch;
+                bubbleDiv.innerHTML = renderCollectSuccessBubble(amount);
             // 检测合并转发卡片
             } else if (mainText.startsWith('[聊天记录]\n')) {
                 bubbleDiv.classList.add('merged-forward-bubble');
@@ -12926,24 +13032,23 @@ activity:（当前在做什么）
         setTimeout(() => {
             const chatContainer = document.getElementById('chat-container');
             if (!chatContainer) return;
-            const wrapper = document.createElement('div');
-            wrapper.className = 'message user';
-            wrapper.dataset.bubbleId = bubbleId;
-            wrapper.innerHTML = transferBubbleHtml;
-            chatContainer.appendChild(wrapper);
-            // 滚动到底部
+            // 用 displayMessage 统一渲染，传 saveToHistory=false 避免重复写入
+            displayMessage(transferMsgText, 'user', 2, new Date().toISOString(), false, bubbleId, false);
             const content = document.querySelector('#chat-page .content');
             if (content) content.scrollTop = content.scrollHeight;
         }, 100);
+
+        // 转账后自动触发 AI 回复（延迟1.5秒，让气泡先显示出来）
+        setTimeout(() => {
+            if (typeof callAPIToGenerate === 'function') {
+                callAPIToGenerate();
+            }
+        }, 1500);
     }
 
     // ---- 角色→用户收款 ----
     function receiveMoneyFromChar(amount, fromName) {
-        const cur = walletBalance();
-        walletSetBalance(cur + amount);
-        walletAddTx('in', amount, fromName, '对方转账');
-
-        // 插入收款气泡（AI 侧）
+        // 只插入气泡，钱等用户点「收款」后才到账
         const bubbleId = 'bubble_' + Date.now() + '_receive';
         const receiveMsgText = `[转账给你] ¥${parseFloat(amount).toFixed(2)}`;
         chatHistory.push({
@@ -12956,18 +13061,12 @@ activity:（当前在做什么）
         saveChatHistory();
 
         setTimeout(() => {
-            const chatContainer = document.getElementById('chat-container');
-            if (!chatContainer) return;
-            const wrapper = document.createElement('div');
-            wrapper.className = 'message ai';
-            wrapper.dataset.bubbleId = bubbleId;
-            wrapper.innerHTML = renderTransferBubble('in', amount, fromName, '');
-            chatContainer.appendChild(wrapper);
+            displayMessage(receiveMsgText, 'assistant', 0, new Date().toISOString(), false, bubbleId, false);
             const content = document.querySelector('#chat-page .content');
             if (content) content.scrollTop = content.scrollHeight;
         }, 100);
 
-        console.log('[Wallet] 收到转账:', amount, '来自:', fromName);
+        console.log('[Wallet] 收到转账气泡:', amount, '来自:', fromName, '（待用户收款）');
     }
 
     // ---- UI 刷新 ----
@@ -13016,30 +13115,298 @@ activity:（当前在做什么）
     function renderTransferBubble(direction, amount, name, note) {
         const isOut = direction === 'out';
         const amtStr = parseFloat(amount).toFixed(2);
-        const label = isOut ? `转给${name}` : `${name}转给你`;
-        const noteHtml = note ? `<div style="font-size:12px;color:#999;margin-top:1px;">${note}</div>` : '';
-        // 微信转账气泡：白底，橙黄钱包图标，金额大字，底部分割线+"微信转账"
-        return `<div style="background:#fff;border-radius:6px;overflow:hidden;min-width:200px;max-width:240px;box-shadow:0 1px 2px rgba(0,0,0,0.08);">
-            <div style="display:flex;align-items:center;gap:12px;padding:14px 14px 12px;">
-                <div style="width:42px;height:42px;border-radius:6px;background:linear-gradient(135deg,#f5a623,#f7b733);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <rect x="2" y="6" width="20" height="14" rx="2" fill="rgba(255,255,255,0.3)"/>
-                        <rect x="2" y="9" width="20" height="3" fill="rgba(255,255,255,0.5)"/>
-                        <rect x="5" y="14" width="5" height="2" rx="1" fill="white"/>
-                        <path d="M8 6V5a4 4 0 0 1 8 0v1" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"/>
+        const label = isOut ? `转账给${name}` : `${name}转账给你`;
+        const noteHtml = note ? `<div style="font-size:11px;color:rgba(255,255,255,0.8);margin-top:2px;">${note}</div>` : '';
+        return `<div style="border-radius:8px;overflow:hidden;min-width:200px;max-width:250px;">
+            <div style="background:linear-gradient(135deg,#f5a11c,#f0920a);padding:14px 16px 14px 14px;display:flex;align-items:center;gap:12px;">
+                <div style="width:46px;height:46px;border-radius:50%;border:2px solid rgba(255,255,255,0.9);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <svg width="24" height="24" viewBox="0 0 30 30" fill="none">
+                        <path d="M24 11H4M24 11l-5-5M24 11l-5 5" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M6 19H26M6 19l5-5M6 19l5 5" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </div>
-                <div style="flex:1;min-width:0;">
-                    <div style="font-size:20px;font-weight:600;color:#1a1a1a;line-height:1.2;">¥${amtStr}</div>
-                    <div style="font-size:12px;color:#999;margin-top:2px;">${label}</div>
+                <div>
+                    <div style="font-size:15px;color:#fff;font-weight:500;margin-bottom:3px;">${label}</div>
+                    <div style="font-size:22px;font-weight:600;color:#fff;letter-spacing:0.5px;">¥ ${amtStr}</div>
                     ${noteHtml}
                 </div>
             </div>
-            <div style="border-top:1px solid #f0f0f0;padding:7px 14px;">
-                <span style="font-size:12px;color:#b0b0b0;">微信转账</span>
+            <div style="background:#fff;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;">
+                <span style="font-size:13px;color:#999;">微信转账</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
             </div>
         </div>`;
     }
+
+    // ---- 转账详情页 ----
+    // _pendingTransferDetail: { direction, amount, note, fromName, bubbleId, timestamp }
+    function openTransferDetail(direction, amount, note, fromName, bubbleId, timestamp) {
+        // direction: 'in' = 对方转给我（可操作），'out' = 我转给对方（只读）
+        window._pendingTransferDetail = { direction, amount, note, fromName, bubbleId, timestamp };
+        const amtStr = parseFloat(amount).toFixed(2);
+
+        // 金额
+        document.getElementById('td-amount').textContent = `¥ ${amtStr}`;
+
+        // 标签：对方转给我 → "XX 转给你"；我转给对方 → "转给 XX"
+        document.getElementById('td-label').textContent =
+            direction === 'in' ? `${fromName} 转给你` : `转给 ${fromName}`;
+
+        // 转账方：对方转给我 → fromName；我转给对方 → 我自己
+        document.getElementById('td-from').textContent =
+            direction === 'in' ? fromName : (config.userNickname || '我');
+
+        // 状态
+        const statusEl = document.getElementById('td-status');
+        statusEl.textContent = '待收款';
+        statusEl.style.color = '#f5a11c';
+
+        // 备注
+        const noteEl = document.getElementById('td-note');
+        if (note) {
+            document.getElementById('td-note-text').textContent = note;
+            noteEl.style.display = 'block';
+        } else {
+            noteEl.style.display = 'none';
+        }
+
+        // 时间
+        const t = new Date(timestamp || Date.now());
+        document.getElementById('td-time').textContent =
+            `${t.getFullYear()}/${t.getMonth()+1}/${t.getDate()} ` +
+            `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
+
+        // 头像
+        const avatarEl = document.getElementById('td-avatar');
+        const charId = window.currentCharacterId;
+        const chars = JSON.parse(localStorage.getItem('characters') || '{}');
+        const char = chars[charId];
+        if (char && char.avatar && char.avatar.startsWith('data:')) {
+            avatarEl.innerHTML = `<img src="${char.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+        } else if (char && char.avatar) {
+            avatarEl.textContent = char.avatar;
+        } else {
+            avatarEl.textContent = (config.aiNickname || 'AI')[0];
+        }
+
+        // 操作区
+        if (direction === 'in') {
+            // 对方转来的：大收款按钮 + 退回小字
+            document.getElementById('td-accept-area').style.display = 'block';
+            document.getElementById('td-readonly-area').style.display = 'none';
+        } else {
+            // 我转出的：只读，等待对方操作
+            document.getElementById('td-accept-area').style.display = 'none';
+            document.getElementById('td-readonly-area').style.display = 'block';
+        }
+
+        showPage('transfer-detail-page');
+    }
+
+    function doTransferAccept() {
+        const d = window._pendingTransferDetail;
+        if (!d) return;
+        const amount = parseFloat(d.amount);
+        walletSetBalance(walletBalance() + amount);
+        walletAddTx('in', amount, d.fromName, d.note || '');
+        document.getElementById('td-status').textContent = '已收款';
+        document.getElementById('td-status').style.color = '#07c160';
+        document.getElementById('td-accept-area').style.display = 'none';
+
+        // 插入收款成功气泡（橙色，AI侧，因为是AI发来的钱被收款）
+        const successText = `[收款成功] ¥${amount.toFixed(2)}`;
+        const bid = 'bubble_' + Date.now() + '_accept';
+        chatHistory.push({ id: bid, role: 'assistant', content: successText, timestamp: new Date().toISOString() });
+        saveChatHistory();
+        setTimeout(() => {
+            displayMessage(successText, 'assistant', 0, new Date().toISOString(), false, bid, false);
+            const c = document.querySelector('#chat-page .content');
+            if (c) c.scrollTop = c.scrollHeight;
+            if (typeof callAPIToGenerate === 'function') setTimeout(callAPIToGenerate, 800);
+        }, 300);
+
+        window._pendingTransferDetail = null;
+        setTimeout(() => showPage('chat-page'), 600);
+    }
+
+    function doTransferRefund() {
+        const d = window._pendingTransferDetail;
+        if (!d) return;
+        const amount = parseFloat(d.amount);
+        document.getElementById('td-status').textContent = '已退回';
+        document.getElementById('td-status').style.color = '#999';
+        document.getElementById('td-accept-area').style.display = 'none';
+
+        // 插入退回气泡（用户侧，因为是我退回给AI的）
+        const refundText = `[退回] ¥${amount.toFixed(2)} 来自${config.userNickname || '我'}`;
+        const bid = 'bubble_' + Date.now() + '_refund';
+        chatHistory.push({ id: bid, role: 'user', content: refundText, timestamp: new Date().toISOString() });
+        saveChatHistory();
+        setTimeout(() => {
+            displayMessage(refundText, 'user', 2, new Date().toISOString(), false, bid, false);
+            const c = document.querySelector('#chat-page .content');
+            if (c) c.scrollTop = c.scrollHeight;
+            if (typeof callAPIToGenerate === 'function') setTimeout(callAPIToGenerate, 800);
+        }, 300);
+
+        window._pendingTransferDetail = null;
+        setTimeout(() => showPage('chat-page'), 600);
+    }
+
+    // ---- 用户发起收款（向角色要钱）----
+    function openCollectFromChat() {
+        window._collectOriginPage = 'chat-page';
+        document.getElementById('plus-menu-panel').style.display = 'none';
+        const nameEl   = document.getElementById('collect-name');
+        const avatarEl = document.getElementById('collect-avatar');
+        if (nameEl)   nameEl.textContent = (window.config && config.aiNickname) ? config.aiNickname : '对方';
+        if (avatarEl) {
+            const charId = window.currentCharacterId;
+            const chars  = JSON.parse(localStorage.getItem('characters') || '{}');
+            const char   = chars[charId];
+            if (char && char.avatar && char.avatar.startsWith('data:')) {
+                avatarEl.innerHTML = `<img src="${char.avatar}" style="width:100%;height:100%;object-fit:cover;">`;
+            } else if (char && char.avatar) {
+                avatarEl.textContent = char.avatar;
+            } else {
+                avatarEl.textContent = (config.aiNickname || 'AI')[0];
+            }
+        }
+        document.getElementById('collect-amount-input').value = '';
+        document.getElementById('collect-note-input').value   = '';
+        showPage('collect-page');
+    }
+
+    function confirmCollectFromChar() {
+        const amtRaw = parseFloat(document.getElementById('collect-amount-input').value);
+        if (isNaN(amtRaw) || amtRaw <= 0) { showToast('请输入有效金额'); return; }
+        const amount = Math.round(amtRaw * 100) / 100;
+        const note   = (document.getElementById('collect-note-input').value || '').trim();
+        const toName = document.getElementById('collect-name').textContent || '对方';
+
+        showPage('chat-page');
+
+        // 插入收款请求气泡（用户侧，角色收到后可以转账）
+        const collectMsgText = `[收款请求] ¥${amount.toFixed(2)}${note ? ' · ' + note : ''}`;
+        const bubbleId = 'bubble_' + Date.now() + '_collect';
+        chatHistory.push({
+            id: bubbleId,
+            role: 'user',
+            content: collectMsgText,
+            timestamp: new Date().toISOString(),
+        });
+        saveChatHistory();
+
+        setTimeout(() => {
+            displayMessage(collectMsgText, 'user', 2, new Date().toISOString(), false, bubbleId, false);
+            const content = document.querySelector('#chat-page .content');
+            if (content) content.scrollTop = content.scrollHeight;
+        }, 100);
+
+        // 自动触发 AI 回复
+        setTimeout(() => {
+            if (typeof callAPIToGenerate === 'function') callAPIToGenerate();
+        }, 1500);
+    }
+
+    // ---- 渲染收款请求气泡 ----
+    function renderCollectBubble(amount, note) {
+        const amtStr = parseFloat(amount).toFixed(2);
+        const noteHtml = note ? `<div style="font-size:11px;color:rgba(255,255,255,0.8);margin-top:2px;">${note}</div>` : '';
+        return `<div style="border-radius:8px;overflow:hidden;min-width:200px;max-width:250px;">
+            <div style="background:linear-gradient(135deg,#07c160,#06ad56);padding:14px 16px 14px 14px;display:flex;align-items:center;gap:12px;">
+                <div style="width:46px;height:46px;border-radius:50%;border:2px solid rgba(255,255,255,0.9);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 19V5M5 12l7-7 7 7"/>
+                    </svg>
+                </div>
+                <div>
+                    <div style="font-size:15px;color:#fff;font-weight:500;margin-bottom:3px;">向你收款</div>
+                    <div style="font-size:22px;font-weight:600;color:#fff;letter-spacing:0.5px;">¥ ${amtStr}</div>
+                    ${noteHtml}
+                </div>
+            </div>
+            <div style="background:#fff;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;">
+                <span style="font-size:13px;color:#999;">微信转账</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+        </div>`;
+    }
+
+    // ---- 渲染退回气泡 ----
+    function renderRefundBubble(amount, fromName) {
+        const amtStr = parseFloat(amount).toFixed(2);
+        return `<div style="border-radius:8px;overflow:hidden;min-width:200px;max-width:250px;">
+            <div style="background:linear-gradient(135deg,#e8870a,#d4730a);padding:14px 16px 14px 14px;display:flex;align-items:center;gap:12px;">
+                <div style="width:46px;height:46px;border-radius:50%;border:2px solid rgba(255,255,255,0.9);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <svg width="24" height="24" viewBox="0 0 30 30" fill="none">
+                        <path d="M24 11H4M24 11l-5-5M24 11l-5 5" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M6 19H26M6 19l5-5M6 19l5 5" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div>
+                    <div style="font-size:15px;color:#fff;font-weight:500;margin-bottom:3px;">已退回</div>
+                    <div style="font-size:22px;font-weight:600;color:#fff;letter-spacing:0.5px;">¥ ${amtStr}</div>
+                </div>
+            </div>
+            <div style="background:#fff;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;">
+                <span style="font-size:13px;color:#999;">微信转账</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+        </div>`;
+    }
+
+    // ---- 收款成功气泡（用户点击「收款」后显示）----
+    function renderCollectSuccessBubble(amount) {
+        const amtStr = parseFloat(amount).toFixed(2);
+        return `<div style="border-radius:8px;overflow:hidden;min-width:200px;max-width:250px;">
+            <div style="background:linear-gradient(135deg,#f5a11c,#f0920a);padding:14px 16px 14px 14px;display:flex;align-items:center;gap:12px;">
+                <div style="width:46px;height:46px;border-radius:50%;border:2px solid rgba(255,255,255,0.9);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 6L9 17l-5-5"/>
+                    </svg>
+                </div>
+                <div>
+                    <div style="font-size:15px;color:#fff;font-weight:500;margin-bottom:3px;">已收款</div>
+                    <div style="font-size:22px;font-weight:600;color:#fff;letter-spacing:0.5px;">¥ ${amtStr}</div>
+                </div>
+            </div>
+            <div style="background:#fff;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;">
+                <span style="font-size:13px;color:#999;">微信收款</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+        </div>`;
+    }
+
+    // ---- AI 输出 [收款请求:N] 标签时处理 ----
+    // 在 processAndDisplaySegments 里通过 cleanApiResponse 之前已有 [转账:N] 解析
+    // 退回气泡由 AI 输出 [退回:N] 标签触发
+    window._parseSpecialTags = function(text) {
+        let processed = text;
+        // [退回:N] → 退回气泡
+        const refundMatches = [...processed.matchAll(/\[退回[:：](\d+(?:\.\d{1,2})?)\]/g)];
+        if (refundMatches.length > 0) {
+            refundMatches.forEach(m => {
+                const amount = parseFloat(m[1]);
+                const fromName = config.aiNickname || '对方';
+                walletSetBalance(walletBalance() + amount);
+                walletAddTx('in', amount, fromName, '退回转账');
+                const bubbleId = 'bubble_' + Date.now() + '_refund';
+                const refundText = `[退回] ¥${amount.toFixed(2)} 来自${fromName}`;
+                chatHistory.push({ id: bubbleId, role: 'assistant', content: refundText, timestamp: new Date().toISOString() });
+                saveChatHistory();
+                setTimeout(() => {
+                    displayMessage(refundText, 'assistant', 0, new Date().toISOString(), false, bubbleId, false);
+                    const c = document.querySelector('#chat-page .content');
+                    if (c) c.scrollTop = c.scrollHeight;
+                }, 200);
+            });
+            processed = processed.replace(/\[退回[:：]\d+(?:\.\d{1,2})?\]/g, '').trim();
+        }
+        return processed;
+    };
 
     // ---- 初始化 ----
     (function initWallet() {
