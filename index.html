@@ -9369,7 +9369,14 @@ ${JSON.stringify(importedMemoryData, null, 2)}
             // 注入钱包转账语法（如果钱包功能启用）
             if (localStorage.getItem('walletEnabled') !== '0') {
                 const bal = parseFloat(localStorage.getItem('userWallet') || '200');
-                finalSystemPrompt += `\n\n[钱包系统] 用户当前余额：¥${bal.toFixed(2)}。如果你在对话中自然地想给用户转钱（例如还钱、奖励、红包等），可以在回复的任意位置加入 [转账:金额] 标记，如 [转账:50]，系统会自动处理。金额须为正整数或两位小数。不要主动提及这个标记的存在，自然使用即可。`;
+                // 计算最近10条消息里有几条转账
+                const recentTransferCount = apiMessages.slice(-10).filter(m =>
+                    m.content && (m.content.includes('[转账给你]') || m.content.includes('[转账:'))
+                ).length;
+                const transferWarning = recentTransferCount >= 2
+                    ? `\n⚠️ 注意：你最近已多次发起转账，请克制，本次回复中【不要】再使用 [转账:N] 标记。`
+                    : '';
+                finalSystemPrompt += `\n\n[钱包系统] 用户当前余额：¥${bal.toFixed(2)}。如果你在对话中自然地想给用户转钱（例如还钱、奖励、红包等），可以在回复的任意位置加入 [转账:金额] 标记，如 [转账:50]，系统会自动处理。金额须为正整数或两位小数。重要限制：不要频繁转账，只在剧情有充分理由时才使用；不要在每条消息里都加转账，如果上一条回复中有转账信息，此条严禁转账；不要主动提及这个标记的存在，自然使用即可。${transferWarning}`;
             }
             if (longTermMemory && longTermMemory.metadata) {
                 // 获取本次要注入的 important_events
@@ -11318,14 +11325,13 @@ ${JSON.stringify(importedMemoryData, null, 2)}
             if (!targetConfigRaw) { showToast('目标角色配置不存在'); return; }
 
             const targetConfig  = JSON.parse(targetConfigRaw);
-            const targetHistory = JSON.parse(localStorage.getItem(targetHistoryKey) || '[]');
+            let targetHistory   = JSON.parse(localStorage.getItem(targetHistoryKey) || '[]');
             const targetAIName  = targetConfig.aiNickname || targetCharacter.name || '对方';
             const isSelf        = targetCharacterId === currentCharacterId;
             const ts            = new Date().toISOString();
             const forwardType   = window.pendingForwardType || 'merged';
 
             if (forwardType === 'separate') {
-                // 逐条：每条保持原 role，内容加「[转发]」前缀
                 msgs.forEach(msg => {
                     targetHistory.push({
                         id: generateUniqueId(),
@@ -11336,7 +11342,6 @@ ${JSON.stringify(importedMemoryData, null, 2)}
                     });
                 });
             } else {
-                // 合并：生成一条带聊天记录的用户消息，并附上 isMergedForward 标记
                 const lines = msgs.map(m => {
                     const senderName = m.role === 'user' ? (config.userNickname || '我') : (config.aiNickname || '对方');
                     return `${senderName}：${m.content}`;
@@ -11359,18 +11364,30 @@ ${JSON.stringify(importedMemoryData, null, 2)}
 
             localStorage.setItem(targetHistoryKey, JSON.stringify(targetHistory));
 
-            // 如果转发给当前角色，刷新当前聊天显示
-            if (isSelf) {
-                chatHistory = targetHistory;
-                renderMessagesRange(Math.max(0, targetHistory.length - 5), targetHistory.length, false);
-                const content = document.querySelector('#chat-page .content');
-                if (content) content.scrollTop = content.scrollHeight;
-            }
-
-            showToast(`已转发到「${targetAIName}」`);
             window.pendingForwardMessages = null;
             window.pendingForwardType = null;
-            showPage('chat-page');
+
+            if (isSelf) {
+                // 转发给当前角色：更新 chatHistory 并重新渲染最后几条
+                chatHistory = targetHistory;
+                saveChatHistory();
+                const chatContainer = document.getElementById('chat-container');
+                if (chatContainer) {
+                    // 只添加新的几条，不清空全部
+                    const newCount = forwardType === 'separate' ? msgs.length : 1;
+                    const start = Math.max(0, targetHistory.length - newCount);
+                    renderMessagesRange(start, targetHistory.length, false);
+                }
+                const content = document.querySelector('#chat-page .content');
+                if (content) content.scrollTop = content.scrollHeight;
+                showToast(`已转发到当前对话`);
+                showPage('chat-page');
+            } else {
+                // 转发给其他角色：切换到目标角色聊天，消息已在那里
+                showToast(`已转发到「${targetAIName}」`);
+                switchToCharacter(targetCharacterId);
+                showPage('chat-page');
+            }
         }
         
         /**
@@ -13038,12 +13055,8 @@ activity:（当前在做什么）
             if (content) content.scrollTop = content.scrollHeight;
         }, 100);
 
-        // 转账后自动触发 AI 回复（延迟1.5秒，让气泡先显示出来）
-        setTimeout(() => {
-            if (typeof callAPIToGenerate === 'function') {
-                callAPIToGenerate();
-            }
-        }, 1500);
+        // 转账后自动触发 AI 回复（遵循用户设置的等待时间）
+        triggerAIReplyWithDelay();
     }
 
     // ---- 角色→用户收款 ----
@@ -13224,7 +13237,7 @@ activity:（当前在做什么）
             displayMessage(successText, 'assistant', 0, new Date().toISOString(), false, bid, false);
             const c = document.querySelector('#chat-page .content');
             if (c) c.scrollTop = c.scrollHeight;
-            if (typeof callAPIToGenerate === 'function') setTimeout(callAPIToGenerate, 800);
+            triggerAIReplyWithDelay();
         }, 300);
 
         window._pendingTransferDetail = null;
@@ -13248,7 +13261,7 @@ activity:（当前在做什么）
             displayMessage(refundText, 'user', 2, new Date().toISOString(), false, bid, false);
             const c = document.querySelector('#chat-page .content');
             if (c) c.scrollTop = c.scrollHeight;
-            if (typeof callAPIToGenerate === 'function') setTimeout(callAPIToGenerate, 800);
+            triggerAIReplyWithDelay();
         }, 300);
 
         window._pendingTransferDetail = null;
@@ -13305,10 +13318,8 @@ activity:（当前在做什么）
             if (content) content.scrollTop = content.scrollHeight;
         }, 100);
 
-        // 自动触发 AI 回复
-        setTimeout(() => {
-            if (typeof callAPIToGenerate === 'function') callAPIToGenerate();
-        }, 1500);
+        // 自动触发 AI 回复（遵循用户设置的等待时间）
+        triggerAIReplyWithDelay();
     }
 
     // ---- 渲染收款请求气泡 ----
@@ -13383,6 +13394,24 @@ activity:（当前在做什么）
     // ---- AI 输出 [收款请求:N] 标签时处理 ----
     // 在 processAndDisplaySegments 里通过 cleanApiResponse 之前已有 [转账:N] 解析
     // 退回气泡由 AI 输出 [退回:N] 标签触发
+
+    // 触发 AI 回复（走正常批量计时器，使用用户设置的等待时间）
+    function triggerAIReplyWithDelay() {
+        if (typeof startBatchTimer !== 'function') {
+            // 降级：直接调用
+            if (typeof callAPIToGenerate === 'function') callAPIToGenerate();
+            return;
+        }
+        // 插入一个空的"触发消息"让批量计时器知道要回复
+        // 实际上直接启动计时器即可，pendingUserMessages 为空时 sendBatchMessages 也会触发
+        // 但 sendBatchMessages 检查 pendingUserMessages.length === 0 会 return
+        // 所以直接延迟调用 callAPIToGenerate，延迟时间用用户设置
+        const waitTime = parseInt(localStorage.getItem('batchWaitTime')) || 7;
+        setTimeout(() => {
+            if (typeof callAPIToGenerate === 'function') callAPIToGenerate();
+        }, waitTime * 1000);
+    }
+
     window._parseSpecialTags = function(text) {
         let processed = text;
         // [退回:N] → 退回气泡
