@@ -3753,6 +3753,15 @@
         let isWaitingForAI = false; // 是否正在等待AI回复
         let hasReachedWaitTime = false; // 是否已达到等待时间（7秒）
         let apiTimeoutTimer = null; // API超时计时器
+        // 暴露给 wallet script 访问
+        Object.defineProperty(window, 'batchSendTimer', {
+            get: () => batchSendTimer,
+            set: (v) => { batchSendTimer = v; }
+        });
+        Object.defineProperty(window, 'isWaitingForAI', {
+            get: () => isWaitingForAI,
+            set: (v) => { isWaitingForAI = v; }
+        });
         // =====================================
         
         // 从localStorage加载并自动转换格式
@@ -4027,16 +4036,26 @@
             const apiMessages = [];
             let currentMessage = null;
             
+            // 清洗内容：移除历史里残留的原始钱包标记（避免污染上下文）
+            function cleanWalletTags(content) {
+                return content
+                    .replace(/\[收款[:：]\d+(?:\.\d{1,2})?\]/g, '')
+                    .replace(/\[退回[:：]\d+(?:\.\d{1,2})?\]/g, '')
+                    .trim();
+            }
+
             bubbles.forEach(bubble => {
+                const cleanContent = cleanWalletTags(bubble.content);
+                if (!cleanContent) return; // 跳过清洗后为空的气泡
                 if (!currentMessage || currentMessage.role !== bubble.role) {
                     if (currentMessage) apiMessages.push(currentMessage);
                     currentMessage = {
                         role: bubble.role,
-                        content: bubble.content,
+                        content: cleanContent,
                         timestamp: bubble.timestamp
                     };
                 } else {
-                    currentMessage.content += '\n\n' + bubble.content;
+                    currentMessage.content += '\n\n' + cleanContent;
                 }
             });
             
@@ -8701,17 +8720,54 @@ ${JSON.stringify(importedMemoryData, null, 2)}
             // 解析状态块（先于一切其他处理）
             let processedText = statusParseAndStrip(fullAiText);
 
-            // 解析并处理转账标记
+            // 解析并处理转账标记 [转账:N] → AI 转钱给用户
             const transferMatches = [...processedText.matchAll(/\[转账[:：](\d+(?:\.\d{1,2})?)\]/g)];
             if (transferMatches.length > 0) {
                 let totalAmount = 0;
                 transferMatches.forEach(m => { totalAmount += parseFloat(m[1]); });
-                // 从文本中移除标记
                 processedText = processedText.replace(/\[转账[:：]\d+(?:\.\d{1,2})?\]/g, '').trim();
-                // 延迟弹出收款通知（等气泡渲染完）
                 setTimeout(() => {
                     receiveMoneyFromChar(totalAmount, config.aiNickname || '对方');
                 }, 600);
+            }
+
+            // 解析 [收款:N] → AI 收下用户的转账，显示收款成功气泡
+            const acceptMatches = [...processedText.matchAll(/\[收款[:：](\d+(?:\.\d{1,2})?)\]/g)];
+            if (acceptMatches.length > 0) {
+                processedText = processedText.replace(/\[收款[:：]\d+(?:\.\d{1,2})?\]/g, '').trim();
+                acceptMatches.forEach(m => {
+                    const amount = parseFloat(m[1]);
+                    const acceptText = `[收款成功] ¥${amount.toFixed(2)}`;
+                    const bid = 'bubble_' + Date.now() + '_aiaccept';
+                    chatHistory.push({ id: bid, role: 'assistant', content: acceptText, timestamp: new Date().toISOString() });
+                    saveChatHistory();
+                    setTimeout(() => {
+                        displayMessage(acceptText, 'assistant', 0, new Date().toISOString(), false, bid, false);
+                        const c = document.querySelector('#chat-page .content');
+                        if (c) c.scrollTop = c.scrollHeight;
+                    }, 400);
+                });
+            }
+
+            // 解析 [退回:N] → AI 退回用户的转账，钱回到用户钱包
+            const refundTagMatches = [...processedText.matchAll(/\[退回[:：](\d+(?:\.\d{1,2})?)\]/g)];
+            if (refundTagMatches.length > 0) {
+                processedText = processedText.replace(/\[退回[:：]\d+(?:\.\d{1,2})?\]/g, '').trim();
+                refundTagMatches.forEach(m => {
+                    const amount = parseFloat(m[1]);
+                    walletSetBalance(walletBalance() + amount);
+                    walletAddTx('in', amount, config.aiNickname || '对方', '退回转账');
+                    const fromName = config.aiNickname || '对方';
+                    const refundText = `[退回] ¥${amount.toFixed(2)} 来自${fromName}`;
+                    const bid = 'bubble_' + Date.now() + '_airefund';
+                    chatHistory.push({ id: bid, role: 'assistant', content: refundText, timestamp: new Date().toISOString() });
+                    saveChatHistory();
+                    setTimeout(() => {
+                        displayMessage(refundText, 'assistant', 0, new Date().toISOString(), false, bid, false);
+                        const c = document.querySelector('#chat-page .content');
+                        if (c) c.scrollTop = c.scrollHeight;
+                    }, 400);
+                });
             }
             // 1. 定义消息分隔符和间隔时间
             const separator = '\n\n';
@@ -8884,8 +8940,9 @@ ${JSON.stringify(importedMemoryData, null, 2)}
             // 重置标记
             hasReachedWaitTime = false;
             
-            // 标记正在等待AI
+            // 标记正在等待AI，并允许本次 callAPIToGenerate 通过
             isWaitingForAI = true;
+            window._allowCallAPI = true;
             
             // 将所有待发送消息的状态更新为双勾
             pendingUserMessages.forEach(bubbleId => {
@@ -9270,6 +9327,15 @@ ${JSON.stringify(importedMemoryData, null, 2)}
          * @param {Array} currentBatchIds - 当前批次的消息ID数组，用于识别等待期间发送的消息
          */
         async function callAPIToGenerate(currentBatchIds = []) {
+            // 防重入：只拦截来自 wallet 的重复触发（isWaitingForAI 由 sendBatchMessages 在调用前设置）
+            // 如果 isWaitingForAI 已是 true 且不是本轮 sendBatchMessages 触发的，则忽略
+            if (isWaitingForAI && !window._allowCallAPI) {
+                console.log('🚫 callAPIToGenerate: 已在等待AI回复，忽略重复调用');
+                return;
+            }
+            window._allowCallAPI = false;
+            if (!isWaitingForAI) isWaitingForAI = true;
+
             // 启动API超时计时器
             const timeoutSeconds = parseInt(localStorage.getItem('apiTimeout')) || 60;
             console.log('⏰ 启动API超时计时器:', timeoutSeconds, '秒');
@@ -9376,7 +9442,12 @@ ${JSON.stringify(importedMemoryData, null, 2)}
                 const transferWarning = recentTransferCount >= 2
                     ? `\n⚠️ 注意：你最近已多次发起转账，请克制，本次回复中【不要】再使用 [转账:N] 标记。`
                     : '';
-                finalSystemPrompt += `\n\n[钱包系统] 用户当前余额：¥${bal.toFixed(2)}。如果你在对话中自然地想给用户转钱（例如还钱、奖励、红包等），可以在回复的任意位置加入 [转账:金额] 标记，如 [转账:50]，系统会自动处理。金额须为正整数或两位小数。重要限制：不要频繁转账，只在剧情有充分理由时才使用；不要在每条消息里都加转账，如果上一条回复中有转账信息，此条严禁转账；不要主动提及这个标记的存在，自然使用即可。${transferWarning}`;
+                finalSystemPrompt += `\n\n[钱包系统] 用户当前余额：¥${bal.toFixed(2)}。
+可用标记（在回复任意位置插入，系统自动处理，无需说明标记存在）：
+- [转账:金额] — 你主动转钱给用户（如还钱、奖励）。仅在剧情有充分理由时使用，不要频繁。
+- [收款:金额] — 你收下用户发来的转账（会显示收款成功气泡）。
+- [退回:金额] — 你退回用户发来的转账（会显示退回气泡，钱还给用户）。
+金额须为正整数或两位小数。重要：不要每条消息都转账，只在场景自然需要时使用。${transferWarning}`;
             }
             if (longTermMemory && longTermMemory.metadata) {
                 // 获取本次要注入的 important_events
@@ -13030,9 +13101,7 @@ activity:（当前在做什么）
         if (originPage !== 'chat-page') return;
 
         // 在聊天界面插入转账气泡（用户侧）
-        // 气泡文字也会进入 chatHistory，AI 下次能看到
         const transferMsgText = `[转账给${toName}] ¥${amount.toFixed(2)}${note ? ' · ' + note : ''}`;
-        const transferBubbleHtml = renderTransferBubble('out', amount, toName, note);
 
         // 写入 chatHistory（纯文字，供 AI 读取）
         const bubbleId = 'bubble_' + Date.now() + '_transfer';
@@ -13045,18 +13114,18 @@ activity:（当前在做什么）
         });
         saveChatHistory();
 
-        // 渲染转账卡片气泡到聊天界面
+        // 加入待发送队列，和普通消息一起走 batchSendTimer 流程
+        pendingUserMessages.push(bubbleId);
+
+        // 渲染转账卡片气泡（不显示已读勾，status=0）
         setTimeout(() => {
-            const chatContainer = document.getElementById('chat-container');
-            if (!chatContainer) return;
-            // 用 displayMessage 统一渲染，传 saveToHistory=false 避免重复写入
-            displayMessage(transferMsgText, 'user', 2, new Date().toISOString(), false, bubbleId, false);
+            displayMessage(transferMsgText, 'user', 0, new Date().toISOString(), false, bubbleId, false);
             const content = document.querySelector('#chat-page .content');
             if (content) content.scrollTop = content.scrollHeight;
         }, 100);
 
-        // 转账后自动触发 AI 回复（遵循用户设置的等待时间）
-        triggerAIReplyWithDelay();
+        // 重启计时器（和普通消息完全一致的流程）
+        startBatchTimer();
     }
 
     // ---- 角色→用户收款 ----
@@ -13228,7 +13297,7 @@ activity:（当前在做什么）
         document.getElementById('td-status').style.color = '#07c160';
         document.getElementById('td-accept-area').style.display = 'none';
 
-        // 插入收款成功气泡（橙色，AI侧，因为是AI发来的钱被收款）
+        // 插入收款成功气泡（assistant侧）
         const successText = `[收款成功] ¥${amount.toFixed(2)}`;
         const bid = 'bubble_' + Date.now() + '_accept';
         chatHistory.push({ id: bid, role: 'assistant', content: successText, timestamp: new Date().toISOString() });
@@ -13237,8 +13306,15 @@ activity:（当前在做什么）
             displayMessage(successText, 'assistant', 0, new Date().toISOString(), false, bid, false);
             const c = document.querySelector('#chat-page .content');
             if (c) c.scrollTop = c.scrollHeight;
-            triggerAIReplyWithDelay();
         }, 300);
+
+        // 插入一条用户侧的"系统触发"气泡让 AI 知道用户收了款，走正常队列
+        const ackText = `[已收款 ¥${amount.toFixed(2)}]`;
+        const ackId = 'bubble_' + Date.now() + '_ack';
+        chatHistory.push({ id: ackId, role: 'user', content: ackText, timestamp: new Date().toISOString(), isSystem: true });
+        saveChatHistory();
+        pendingUserMessages.push(ackId);
+        startBatchTimer();
 
         window._pendingTransferDetail = null;
         setTimeout(() => showPage('chat-page'), 600);
@@ -13252,17 +13328,18 @@ activity:（当前在做什么）
         document.getElementById('td-status').style.color = '#999';
         document.getElementById('td-accept-area').style.display = 'none';
 
-        // 插入退回气泡（用户侧，因为是我退回给AI的）
+        // 插入退回气泡（用户侧）并加入队列
         const refundText = `[退回] ¥${amount.toFixed(2)} 来自${config.userNickname || '我'}`;
         const bid = 'bubble_' + Date.now() + '_refund';
         chatHistory.push({ id: bid, role: 'user', content: refundText, timestamp: new Date().toISOString() });
         saveChatHistory();
         setTimeout(() => {
-            displayMessage(refundText, 'user', 2, new Date().toISOString(), false, bid, false);
+            displayMessage(refundText, 'user', 0, new Date().toISOString(), false, bid, false);
             const c = document.querySelector('#chat-page .content');
             if (c) c.scrollTop = c.scrollHeight;
-            triggerAIReplyWithDelay();
         }, 300);
+        pendingUserMessages.push(bid);
+        startBatchTimer();
 
         window._pendingTransferDetail = null;
         setTimeout(() => showPage('chat-page'), 600);
@@ -13312,14 +13389,17 @@ activity:（当前在做什么）
         });
         saveChatHistory();
 
+        // 加入待发送队列，走 batchSendTimer 正常流程
+        pendingUserMessages.push(bubbleId);
+
         setTimeout(() => {
-            displayMessage(collectMsgText, 'user', 2, new Date().toISOString(), false, bubbleId, false);
+            displayMessage(collectMsgText, 'user', 0, new Date().toISOString(), false, bubbleId, false);
             const content = document.querySelector('#chat-page .content');
             if (content) content.scrollTop = content.scrollHeight;
         }, 100);
 
-        // 自动触发 AI 回复（遵循用户设置的等待时间）
-        triggerAIReplyWithDelay();
+        // 重启计时器
+        startBatchTimer();
     }
 
     // ---- 渲染收款请求气泡 ----
@@ -13397,19 +13477,25 @@ activity:（当前在做什么）
 
     // 触发 AI 回复（走正常批量计时器，使用用户设置的等待时间）
     function triggerAIReplyWithDelay() {
-        if (typeof startBatchTimer !== 'function') {
-            // 降级：直接调用
-            if (typeof callAPIToGenerate === 'function') callAPIToGenerate();
-            return;
+        // 取消已有的批量计时器
+        if (window.batchSendTimer) {
+            clearTimeout(window.batchSendTimer);
+            window.batchSendTimer = null;
         }
-        // 插入一个空的"触发消息"让批量计时器知道要回复
-        // 实际上直接启动计时器即可，pendingUserMessages 为空时 sendBatchMessages 也会触发
-        // 但 sendBatchMessages 检查 pendingUserMessages.length === 0 会 return
-        // 所以直接延迟调用 callAPIToGenerate，延迟时间用用户设置
-        const waitTime = parseInt(localStorage.getItem('batchWaitTime')) || 7;
+        // 用版本号作废旧的延迟调用
+        if (!window._walletTriggerToken) window._walletTriggerToken = 0;
+        const myToken = ++window._walletTriggerToken;
+
+        const waitTime = (parseInt(localStorage.getItem('batchWaitTime')) || 7) * 1000;
         setTimeout(() => {
-            if (typeof callAPIToGenerate === 'function') callAPIToGenerate();
-        }, waitTime * 1000);
+            // 如果有更新的调用，本次作废
+            if (window._walletTriggerToken !== myToken) return;
+            if (typeof isWaitingForAI !== 'undefined' && isWaitingForAI) return;
+            if (typeof callAPIToGenerate === 'function') {
+                window._allowCallAPI = true;
+                callAPIToGenerate();
+            }
+        }, waitTime);
     }
 
     window._parseSpecialTags = function(text) {
@@ -13434,6 +13520,25 @@ activity:（当前在做什么）
             });
             processed = processed.replace(/\[退回[:：]\d+(?:\.\d{1,2})?\]/g, '').trim();
         }
+
+        // [收款:N] → AI 收下了用户的转账，显示收款成功气泡
+        const acceptMatches = [...processed.matchAll(/\[收款[:：](\d+(?:\.\d{1,2})?)\]/g)];
+        if (acceptMatches.length > 0) {
+            acceptMatches.forEach(m => {
+                const amount = parseFloat(m[1]);
+                const bubbleId = 'bubble_' + Date.now() + '_aiaccept_' + Math.random().toString(36).slice(2,6);
+                const acceptText = `[收款成功] ¥${amount.toFixed(2)}`;
+                chatHistory.push({ id: bubbleId, role: 'assistant', content: acceptText, timestamp: new Date().toISOString() });
+                saveChatHistory();
+                setTimeout(() => {
+                    displayMessage(acceptText, 'assistant', 0, new Date().toISOString(), false, bubbleId, false);
+                    const c = document.querySelector('#chat-page .content');
+                    if (c) c.scrollTop = c.scrollHeight;
+                }, 300);
+            });
+            processed = processed.replace(/\[收款[:：]\d+(?:\.\d{1,2})?\]/g, '').trim();
+        }
+
         return processed;
     };
 
