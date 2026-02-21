@@ -8770,14 +8770,50 @@ ${JSON.stringify(importedMemoryData, null, 2)}
                 });
             }
             // 1. 定义消息分隔符和间隔时间
-            const separator = '\n\n';
             const delay = 500; // 每条消息之间的间隔，单位：毫秒 (0.5 秒)
             
             // 生成AI消息的时间戳（所有分段使用同一个时间）
             const aiTimestamp = new Date().toISOString();
 
-            // 2. 根据 '\n\n' 分割完整的响应文本
-            const messageSegments = processedText.split(separator).filter(seg => seg.trim());
+            // 2. 判断分割策略：线上模式 + 短回复 → 按标点分割；否则按 '\n\n' 分割
+            const isOfflineMode = localStorage.getItem('offlineMode') === '1';
+            const isShortReply = processedText.trim().length <= 100;
+            let messageSegments;
+
+            if (!isOfflineMode && isShortReply) {
+                // 线上模式短回复：按标点分割
+                // 保留（附在气泡末尾）：！？…~～
+                // 删除（切分后丢掉）：，、；;,。.
+                const keepPunct   = /^[！？…~～]$/;
+                const removePunct = /^[，、；;,。.]$/;
+                const splitRegex  = /([！？…~～，、；;,。.])/;
+
+                const parts = processedText.split(splitRegex);
+                const segs = [];
+                let current = '';
+                for (let i = 0; i < parts.length; i++) {
+                    const part = parts[i];
+                    if (keepPunct.test(part)) {
+                        current += part;
+                        if (current.trim()) segs.push(current.trim());
+                        current = '';
+                    } else if (removePunct.test(part)) {
+                        if (current.trim()) segs.push(current.trim());
+                        current = '';
+                    } else {
+                        current += part;
+                    }
+                }
+                if (current.trim()) segs.push(current.trim());
+                messageSegments = segs.filter(s => s.length > 0);
+
+                if (messageSegments.length <= 1) {
+                    messageSegments = processedText.split('\n\n').filter(seg => seg.trim());
+                }
+            } else {
+                // 线下模式或长回复：按 '\n\n' 分割
+                messageSegments = processedText.split('\n\n').filter(seg => seg.trim());
+            }
 
             // 3. 【关键修改】先同步将所有分段加入chatHistory
             const bubbles = []; // 保存所有气泡对象，用于后续UI显示
