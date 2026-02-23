@@ -7171,6 +7171,9 @@ ${Object.keys(longTermMemory.basic_info).length > 0 ? JSON.stringify(longTermMem
 【当前已有的性格偏好】
 ${longTermMemory.emotional_profile || '无'}
 
+【当前已有的人际关系】
+${longTermMemory.relationships || '无'}
+
 【当前已有的重要事件】
 ${existingMemoriesContext || '无'}
 
@@ -7178,7 +7181,7 @@ ${existingMemoriesContext || '无'}
 ${conversationText}
 
 【任务要求】
-每次生成必须完成三个判断：
+每次生成必须完成四个判断：
 
 1. 基本信息更新判断（兴趣爱好）
    - 是否发现用户新的兴趣爱好？
@@ -7186,14 +7189,19 @@ ${conversationText}
    - 例如："足球"、"踢足球"、"草莓蛋糕"、"吃草莓蛋糕"、"郁金香"、"养猫"
    - 如果有，输出需要添加的兴趣；如果无，输出null
 
-2. 性格偏好更新判断（延伸追加，不覆盖）
+2. 人际关系更新判断（追加补充，不覆盖）
+   - 是否提到了具体的人物关系？如家人、朋友、伴侣、同事、宠物等
+   - 简洁描述，每条关系一行，例如："有一个弟弟小明，在读大学"、"男友叫阿杰，在互联网公司工作"
+   - 如果有新信息，输出要追加的文字；如果无变化，输出null
+
+3. 性格偏好更新判断（延伸追加，不覆盖）
    - 是否发现用户新的性格特点、行为模式、价值观？
    - 以第一人称视角描述："我注意到TA..."
    - 保持客观、温和的观察态度，不评判
    - 如果有新发现，输出要追加的内容（50-100字）；如果无，输出null
    - 注意：是追加到已有内容后面，不是覆盖
 
-3. 重要事件处理（只生成0或1条）
+4. 重要事件处理（只生成0或1条）
    - 优先判断：是否在延续/更新已有记忆？
      * 如果是，输出 action: "update"
    - 其次判断：是否有值得记录的新话题？
@@ -7216,6 +7224,8 @@ ${conversationText}
     "足球": "喜欢看足球比赛",
     "草莓蛋糕": "最爱的甜品"
   } 或 null,
+  
+  "relationships_update": "有一个弟弟小明，在读大学" 或 null,
   
   "emotional_profile_update": "我注意到TA遇到困难时喜欢先自己思考再求助。" 或 null,
   
@@ -7309,6 +7319,8 @@ ${conversationText}
     "足球": "喜欢踢足球"
   } 或 null,
   
+  "relationships_update": "男友叫阿杰，在互联网公司工作" 或 null,
+  
   "emotional_profile_update": "我发现TA..." 或 null,
   
   "memory_action": {
@@ -7370,7 +7382,20 @@ ${conversationText}
                         console.log('📝 更新兴趣爱好:', result.basic_info_updates);
                     }
                     
-                    // 2. 处理性格偏好更新（追加，不覆盖）
+                    // 2. 处理人际关系更新（追加，不覆盖）
+                    if (result.relationships_update) {
+                        if (longTermMemory.relationships) {
+                            longTermMemory.relationships += '\n' + result.relationships_update;
+                        } else {
+                            longTermMemory.relationships = result.relationships_update;
+                        }
+                        // 同步到编辑器
+                        const relEl = document.getElementById('relationships-editor');
+                        if (relEl) relEl.value = longTermMemory.relationships;
+                        console.log('👥 更新人际关系:', result.relationships_update);
+                    }
+                    
+                    // 3. 处理性格偏好更新（追加，不覆盖）
                     if (result.emotional_profile_update) {
                         if (longTermMemory.emotional_profile) {
                             longTermMemory.emotional_profile += ' ' + result.emotional_profile_update;
@@ -7380,7 +7405,7 @@ ${conversationText}
                         console.log('💭 追加性格偏好');
                     }
                     
-                    // 3. 处理重要事件
+                    // 4. 处理重要事件
                     const memoryAction = result.memory_action;
                     
                     if (memoryAction.action === "update") {
