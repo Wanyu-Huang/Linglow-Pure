@@ -2886,6 +2886,9 @@
                         <button onclick="fetchModels()" style="padding: 10px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; font-size: 14px;">
                             拉取
                         </button>
+                        <button onclick="manualAddModel('modelname')" title="手动添加模型" style="padding: 10px 12px; background-color: #FF9800; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; font-size: 16px; font-weight: bold;">
+                            ＋
+                        </button>
                         <button onclick="testConnection()" style="padding: 10px 16px; background-color: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; font-size: 14px;">
                             测试
                         </button>
@@ -3130,6 +3133,7 @@
                                     <option value="">-- 请先拉取模型列表 --</option>
                                 </select>
                                 <button onclick="moFetchModels()" style="padding:8px 12px;background:#4CAF50;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;">拉取</button>
+                                <button onclick="manualAddModel('mo-modelname')" title="手动添加模型" style="padding:8px 10px;background:#FF9800;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:15px;font-weight:bold;">＋</button>
                             </div>
                             <p style="font-size:11px;color:#f57c00;margin:4px 0 0;">建议选择便宜的模型（如 flash、mini 系列），不要选 thinking 类型</p>
                         </div>
@@ -3168,6 +3172,7 @@
                                     <option value="">-- 请先拉取模型列表 --</option>
                                 </select>
                                 <button onclick="webFetchModels()" style="padding:8px 12px;background:#2196F3;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;">拉取</button>
+                                <button onclick="manualAddModel('web-modelname')" title="手动添加模型" style="padding:8px 10px;background:#FF9800;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:15px;font-weight:bold;">＋</button>
                             </div>
                             <p style="font-size:11px;color:#1565C0;margin:4px 0 0;">请选择该服务商提供的联网版模型（如 sonar、gemini-2.0-flash-exp 等）</p>
                         </div>
@@ -3194,6 +3199,7 @@
                                         <option value="">-- 请先拉取 --</option>
                                     </select>
                                     <button onclick="webJudgeFetchModels()" style="padding:7px 10px;background:#607D8B;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;">拉取</button>
+                                    <button onclick="manualAddModel('web-judge-modelname')" title="手动添加模型" style="padding:7px 9px;background:#FF9800;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;font-weight:bold;">＋</button>
                                 </div>
                             </div>
                         </div>
@@ -5476,6 +5482,45 @@
 
         function closeSettings() {
             showPage('chat-page', document.querySelector('.nav-item:nth-child(2)'));
+        }
+
+        /**
+         * 手动添加模型到下拉列表
+         * @param {string} selectId - 目标 <select> 的 id
+         */
+        function manualAddModel(selectId) {
+            const modelName = prompt('请输入要添加的模型名称（如 gpt-4o、claude-3-5-sonnet-20241022）：');
+            if (!modelName || !modelName.trim()) return;
+            const name = modelName.trim();
+            const selectEl = document.getElementById(selectId);
+            if (!selectEl) return;
+
+            // 检查是否已存在
+            for (let i = 0; i < selectEl.options.length; i++) {
+                if (selectEl.options[i].value === name) {
+                    selectEl.value = name;
+                    showToast('模型已存在，已为你选中');
+                    return;
+                }
+            }
+
+            // 移除"请先拉取"占位符（如果只有它）
+            if (selectEl.options.length === 1 && selectEl.options[0].value === '') {
+                selectEl.innerHTML = '';
+            }
+
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            selectEl.appendChild(option);
+            selectEl.value = name;
+
+            // 同步到 config（仅对主模型 select 做额外同步）
+            if (selectId === 'modelname' && typeof config !== 'undefined') {
+                config.modelname = name;
+            }
+
+            showToast(`✅ 已添加模型: ${name}`);
         }
 
         /**
